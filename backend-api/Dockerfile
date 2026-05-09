@@ -24,4 +24,10 @@ COPY --from=publish /app/publish .
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
 
+# Optimización de memoria para contenedores con RAM limitada (Render Free = 512MB)
+# Usar GC Workstation (menos RAM que Server GC), limitar heap a 256MB, máxima conservación
+ENV DOTNET_gcServer=0
+ENV DOTNET_GCHeapHardLimit=0x10000000
+ENV DOTNET_GCConserveMemory=9
+
 ENTRYPOINT ["dotnet", "ErpStore.Api.dll"]

@@ -30,10 +30,13 @@ public class ReportsController : ControllerBase
             var start = startDate ?? DateTime.MinValue;
             var end = endDate?.AddDays(1).AddTicks(-1) ?? DateTime.MaxValue;
 
-            var sales = await _context.Sales
+            // Proyección directa: la BD calcula los totales, no se cargan entidades completas a RAM
+            var salesData = await _context.Sales
                 .Where(s => !s.IsVoid && s.Date >= start && s.Date <= end)
-                .Include(s => s.SaleDetails)
-                .ThenInclude(sd => sd.Product)
+                .Select(s => new {
+                    s.Total,
+                    CostTotal = s.SaleDetails.Sum(sd => (sd.Product != null ? sd.Product.Cost : 0) * sd.Quantity)
+                })
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -41,17 +44,8 @@ public class ReportsController : ControllerBase
                 .Where(e => e.Date >= start && e.Date <= end)
                 .SumAsync(e => (decimal?)e.Amount) ?? 0;
 
-            var totalRevenue = sales.Sum(s => s.Total);
-            
-            decimal totalCost = 0;
-            foreach(var sale in sales)
-            {
-                foreach(var detail in sale.SaleDetails)
-                {
-                     var cost = detail.Product?.Cost ?? 0; 
-                     totalCost += cost * detail.Quantity;
-                }
-            }
+            var totalRevenue = salesData.Sum(s => s.Total);
+            var totalCost = salesData.Sum(s => s.CostTotal);
 
             var grossProfit = totalRevenue - totalCost;
             var netProfit = grossProfit - expenses;
@@ -63,8 +57,8 @@ public class ReportsController : ControllerBase
                 GrossProfit = grossProfit,
                 TotalExpenses = expenses,
                 NetProfit = netProfit,
-                TotalTransactions = sales.Count,
-                AverageTicket = sales.Count > 0 ? totalRevenue / sales.Count : 0
+                TotalTransactions = salesData.Count,
+                AverageTicket = salesData.Count > 0 ? totalRevenue / salesData.Count : 0
             };
         }
         catch (Exception ex)
@@ -213,28 +207,27 @@ public class ReportsController : ControllerBase
             var end = endDate?.AddDays(1).AddTicks(-1) ?? DateTime.MaxValue;
 
             // Fetch with AsNoTracking for performance
+            // Proyección directa: solo traer los campos necesarios, no entidades completas
             var details = await _context.SaleDetails
-                .Include(sd => sd.Sale)
-                    .ThenInclude(s => s.Employee)
-                .Include(sd => sd.Product)
                 .Where(sd => !sd.Sale.IsVoid && sd.Sale.Date >= start && sd.Sale.Date <= end)
                 .OrderByDescending(sd => sd.Sale.Date)
+                .Select(sd => new SaleProfitDto
+                {
+                    SaleId = sd.SaleId,
+                    NoteNumber = sd.Sale.NoteNumber ?? $"N-{sd.SaleId}",
+                    Date = sd.Sale.Date,
+                    EmployeeName = sd.Sale.Employee != null ? sd.Sale.Employee.Name : "Desconocido",
+                    ProductNames = sd.Product != null ? sd.Product.Name : "Producto Eliminado",
+                    TotalQuantity = sd.Quantity,
+                    TotalRevenue = sd.Subtotal,
+                    TotalCost = (sd.Product != null ? sd.Product.Cost : 0) * sd.Quantity,
+                    GrossProfit = sd.Subtotal - ((sd.Product != null ? sd.Product.Cost : 0) * sd.Quantity),
+                    PaymentMethod = sd.Sale.PaymentMethod
+                })
                 .AsNoTracking()
                 .ToListAsync();
 
-            return details.Select(sd => new SaleProfitDto
-            {
-                SaleId = sd.SaleId,
-                NoteNumber = sd.Sale.NoteNumber ?? $"N-{sd.SaleId}",
-                Date = sd.Sale.Date,
-                EmployeeName = sd.Sale.Employee?.Name ?? "Desconocido",
-                ProductNames = sd.Product?.Name ?? "Producto Eliminado",
-                TotalQuantity = sd.Quantity,
-                TotalRevenue = sd.Subtotal,
-                TotalCost = (sd.Product?.Cost ?? 0) * sd.Quantity,
-                GrossProfit = (sd.Subtotal) - ((sd.Product?.Cost ?? 0) * sd.Quantity),
-                PaymentMethod = sd.Sale.PaymentMethod
-            }).ToList();
+            return details;
         }
         catch (Exception ex)
         {

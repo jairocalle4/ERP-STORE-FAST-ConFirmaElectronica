@@ -27,7 +27,12 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IElectronicBillingService, ElectronicBillingService>();
 // Background service: verifica stock bajo cada hora y envía correo automático consolidado
-builder.Services.AddHostedService<LowStockBackgroundService>();
+// Solo se activa si la variable ENABLE_BACKGROUND_SERVICES=true está configurada en Render
+// Activar cuando Brevo esté configurado para que los emails realmente se envíen
+if (builder.Configuration.GetValue<bool>("ENABLE_BACKGROUND_SERVICES"))
+{
+    builder.Services.AddHostedService<LowStockBackgroundService>();
+}
 
 // Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
