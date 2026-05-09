@@ -14,10 +14,6 @@ export interface CompanySetting {
     currentSequence: number;
     expirationDate?: string;
     socialReason?: string;
-    smtpServer?: string;
-    smtpPort: number;
-    smtpUser?: string;
-    smtpPass?: string;
     brevoApiKey?: string;
     coverImageUrl?: string;
 }
@@ -35,10 +31,6 @@ export interface CompanySettingDto {
     currentSequence: number;
     expirationDate?: string;
     socialReason?: string;
-    smtpServer?: string;
-    smtpPort: number;
-    smtpUser?: string;
-    smtpPass?: string;
     brevoApiKey?: string;
     coverImageUrl?: string;
 }

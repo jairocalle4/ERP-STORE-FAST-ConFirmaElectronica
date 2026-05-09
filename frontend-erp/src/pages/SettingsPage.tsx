@@ -12,7 +12,6 @@ export default function SettingsPage() {
     const [settings, setSettings] = useState<CompanySetting | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [showSmtpPass, setShowSmtpPass] = useState(false);
     const [testingEmail, setTestingEmail] = useState(false);
     const [testEmailResult, setTestEmailResult] = useState<{ ok: boolean; msg: string; detail?: string } | null>(null);
     const addNotification = useNotificationStore(state => state.addNotification);
@@ -252,7 +251,7 @@ export default function SettingsPage() {
                         </div>
                     </GlassCard>
 
-                    {/* Email Alerts Config — Redesigned with method selector */}
+                    {/* Email Config — Solo Brevo */}
                     <GlassCard className="p-8 space-y-6 md:col-span-2">
                         {/* Header */}
                         <div className="flex justify-between items-center">
@@ -263,14 +262,14 @@ export default function SettingsPage() {
                             <div className={`px-3 py-1 rounded-full border flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${
                                 settings?.brevoApiKey
                                     ? 'bg-violet-50 border-violet-200 text-violet-700'
-                                    : 'bg-indigo-50 border-indigo-100 text-indigo-600'
+                                    : 'bg-slate-100 border-slate-200 text-slate-500'
                             }`}>
-                                <div className={`w-2 h-2 rounded-full animate-pulse ${settings?.brevoApiKey ? 'bg-violet-500' : 'bg-emerald-500'}`}></div>
-                                {settings?.brevoApiKey ? 'Brevo API' : 'SMTP'}
+                                <div className={`w-2 h-2 rounded-full ${settings?.brevoApiKey ? 'bg-violet-500 animate-pulse' : 'bg-slate-400'}`}></div>
+                                {settings?.brevoApiKey ? 'Brevo Activo' : 'Sin Configurar'}
                             </div>
                         </div>
 
-                        {/* === Shared: Email remitente — always visible === */}
+                        {/* === Shared: Email remitente === */}
                         <div>
                             <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
                                 Correo Remitente (De:)
@@ -278,65 +277,20 @@ export default function SettingsPage() {
                             <input
                                 type="email"
                                 placeholder="tu-correo@empresa.com"
-                                value={settings?.smtpUser || ''}
-                                onChange={e => setSettings(s => s ? { ...s, smtpUser: e.target.value } : null)}
+                                value={settings?.email || ''}
+                                onChange={e => setSettings(s => s ? { ...s, email: e.target.value } : null)}
                                 className="w-full px-4 py-3 bg-white/80 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all text-sm font-medium"
                             />
-                            <div className="mt-2 flex items-start gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl">
-                                <span className="text-amber-500 text-sm shrink-0 mt-0.5">⚠</span>
-                                <p className="text-[11px] text-amber-700 leading-relaxed font-medium">
-                                    Es el correo que aparece como <span className="font-black">"De:"</span> en todos los envíos.
-                                    Si usas <span className="font-black">Gmail / Outlook</span>, debe ser <span className="font-black underline">exactamente</span> la misma cuenta con la que generaste la Contraseña de Aplicación — no puede ser distinto, el servidor lo rechazará.
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* === Method Selector tabs === */}
-                        <div>
-                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Método de Envío</p>
-                            <div className="grid grid-cols-2 gap-3">
-                                {/* Tab: Brevo */}
-                                <button
-                                    type="button"
-                                    onClick={() => {/* just visual — brevo takes priority when api key is set */}}
-                                    className={`relative flex flex-col items-start gap-1 p-4 rounded-2xl border-2 text-left transition-all ${
-                                        settings?.brevoApiKey
-                                            ? 'border-violet-400 bg-violet-50 shadow-sm shadow-violet-100'
-                                            : 'border-slate-200 bg-white/50 hover:border-violet-200'
-                                    }`}
-                                >
-                                    {settings?.brevoApiKey && (
-                                        <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-violet-500 animate-pulse" />
-                                    )}
-                                    <span className="text-base">🚀</span>
-                                    <span className="font-black text-sm text-violet-800">Brevo API</span>
-                                    <span className="text-[11px] text-violet-600 leading-relaxed">Recomendado. Gratuito 300 correos/día. Funciona aunque el ISP bloquee los puertos SMTP.</span>
-                                </button>
-                                {/* Tab: SMTP */}
-                                <button
-                                    type="button"
-                                    onClick={() => {/* visual only */}}
-                                    className={`relative flex flex-col items-start gap-1 p-4 rounded-2xl border-2 text-left transition-all ${
-                                        !settings?.brevoApiKey
-                                            ? 'border-indigo-400 bg-indigo-50 shadow-sm shadow-indigo-100'
-                                            : 'border-slate-200 bg-white/50 hover:border-indigo-200'
-                                    }`}
-                                >
-                                    {!settings?.brevoApiKey && (
-                                        <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse" />
-                                    )}
-                                    <span className="text-base">📧</span>
-                                    <span className="font-black text-sm text-indigo-800">SMTP Manual</span>
-                                    <span className="text-[11px] text-indigo-600 leading-relaxed">Gmail, Outlook, Yahoo, etc. Requiere Contraseña de Aplicación.</span>
-                                </button>
-                            </div>
+                            <p className="text-[10px] text-slate-400 mt-1.5 italic">
+                                Este correo aparece como "De:" en los envíos y también recibe las alertas de stock bajo.
+                            </p>
                         </div>
 
                         {/* === BREVO panel === */}
                         <div className={`rounded-2xl border-2 p-5 space-y-3 transition-all ${
                             settings?.brevoApiKey
                                 ? 'border-violet-300 bg-violet-50/60'
-                                : 'border-slate-100 bg-slate-50/50 opacity-60'
+                                : 'border-slate-200 bg-slate-50/50'
                         }`}>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
@@ -363,94 +317,17 @@ export default function SettingsPage() {
                             />
                             <p className="text-[10px] text-violet-500 font-medium">
                                 {settings?.brevoApiKey
-                                    ? '✅ Brevo está activo y tiene prioridad sobre SMTP.'
-                                    : 'Deja vacío para usar SMTP. Si se llena, Brevo tiene prioridad automáticamente.'}
+                                    ? '✅ Brevo está activo. Los correos de alerta se enviarán automáticamente.'
+                                    : '🔑 Pega tu API Key de Brevo para activar el envío de correos. Gratuito: 300 correos/día.'}
                             </p>
-                        </div>
-
-                        {/* === SMTP panel — collapsed when Brevo is active === */}
-                        <div className={`space-y-4 transition-all ${settings?.brevoApiKey ? 'opacity-40 pointer-events-none select-none' : ''}`}>
-                            <div className="flex items-center gap-3">
-                                <div className="h-px flex-1 bg-slate-200" />
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                    {settings?.brevoApiKey ? 'SMTP (inactivo — Brevo tiene prioridad)' : 'Configuración SMTP'}
-                                </span>
-                                <div className="h-px flex-1 bg-slate-200" />
-                            </div>
-
-                            {/* Provider shortcuts */}
-                            <div className="flex flex-wrap gap-2">
-                                {[
-                                    { name: 'Gmail', server: 'smtp.gmail.com', port: 587 },
-                                    { name: 'Outlook', server: 'smtp.office365.com', port: 587 },
-                                    { name: 'Yahoo', server: 'smtp.mail.yahoo.com', port: 465 },
-                                    { name: 'iCloud', server: 'smtp.mail.me.com', port: 587 }
-                                ].map(prov => (
-                                    <button
-                                        key={prov.name}
-                                        type="button"
-                                        onClick={() => setSettings(s => s ? { ...s, smtpServer: prov.server, smtpPort: prov.port } : null)}
-                                        className={`px-3 py-1.5 bg-white border rounded-xl text-xs font-bold transition-all active:scale-95 ${
-                                            settings?.smtpServer === prov.server
-                                                ? 'border-indigo-400 text-indigo-700 bg-indigo-50'
-                                                : 'border-slate-200 text-slate-600 hover:border-indigo-300'
-                                        }`}
-                                    >
-                                        {prov.name}
-                                    </button>
-                                ))}
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div className="md:col-span-2">
-                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Servidor SMTP</label>
-                                    <input
-                                        type="text"
-                                        placeholder="smtp.gmail.com"
-                                        value={settings?.smtpServer || ''}
-                                        onChange={e => setSettings(s => s ? { ...s, smtpServer: e.target.value } : null)}
-                                        className="w-full px-4 py-3 bg-white/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all font-mono text-sm"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Puerto</label>
-                                    <input
-                                        type="number"
-                                        value={settings?.smtpPort || 587}
-                                        onChange={e => setSettings(s => s ? { ...s, smtpPort: parseInt(e.target.value) } : null)}
-                                        className="w-full px-4 py-3 bg-white/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all font-mono text-sm"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Seguridad</label>
-                                    <div className="flex items-center gap-2 mt-3.5">
-                                        <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 shadow shadow-emerald-200" />
-                                        <span className="text-xs font-bold text-slate-500">SSL/TLS</span>
-                                    </div>
-                                </div>
-                                <div className="md:col-span-4">
-                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Contraseña de Aplicación</label>
-                                    <div className="relative max-w-md">
-                                        <input
-                                            type={showSmtpPass ? 'text' : 'password'}
-                                            placeholder="••••••••••••••••"
-                                            value={settings?.smtpPass || ''}
-                                            onChange={e => setSettings(s => s ? { ...s, smtpPass: e.target.value } : null)}
-                                            className="w-full pr-12 pl-4 py-3 bg-white/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all text-sm font-mono"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowSmtpPass(v => !v)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-300 hover:text-indigo-500 transition-colors"
-                                        >
-                                            {showSmtpPass ? <EyeOff size={17} /> : <Eye size={17} />}
-                                        </button>
-                                    </div>
-                                    <p className="text-[10px] text-slate-400 mt-1.5 italic">
-                                        Gmail / Outlook: usa una <span className="underline font-semibold">Contraseña de Aplicación</span>, no tu clave habitual.
+                            {!settings?.brevoApiKey && (
+                                <div className="flex items-start gap-2 px-3 py-2.5 bg-indigo-50 border border-indigo-200 rounded-xl">
+                                    <span className="text-indigo-500 text-sm shrink-0 mt-0.5">💡</span>
+                                    <p className="text-[11px] text-indigo-700 leading-relaxed font-medium">
+                                        <span className="font-black">¿Cómo obtener tu API Key?</span> Crea una cuenta gratis en <a href="https://app.brevo.com" target="_blank" rel="noopener noreferrer" className="underline font-black">brevo.com</a>, ve a Configuración → Claves API → Generar nueva clave.
                                     </p>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
                         {/* Test Email Button */}
