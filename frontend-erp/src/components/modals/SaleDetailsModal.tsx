@@ -59,19 +59,33 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({ isOpen, onClose, sa
         });
     };
 
+    // ── Método profesional: Blob URL + iframe oculto ──────────────────────────
+    // No requiere popup ni permisos especiales del navegador.
+    // Misma técnica que usa la librería print-js internamente.
     const openPrintWindow = (htmlContent: string) => {
-        const printWin = window.open('about:blank', '_blank', 'width=900,height=700,left=100,top=100');
-        if (!printWin) {
-            alert('Tu navegador bloqueó la ventana de impresión. Por favor permite ventanas emergentes para este sitio.');
-            return;
-        }
-        printWin.document.open();
-        printWin.document.write(htmlContent);
-        printWin.document.close();
-        setTimeout(() => {
-            printWin.focus();
-            printWin.print();
-        }, 600);
+        const blob = new Blob([htmlContent], { type: 'text/html; charset=utf-8' });
+        const blobUrl = URL.createObjectURL(blob);
+
+        const iframe = document.createElement('iframe');
+        iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;opacity:0;';
+        document.body.appendChild(iframe);
+
+        iframe.onload = () => {
+            try {
+                iframe.contentWindow?.focus();
+                iframe.contentWindow?.print();
+            } catch (e) {
+                console.error('Error al imprimir:', e);
+            }
+            // Limpieza después de que el diálogo de impresión se cierra
+            setTimeout(() => {
+                document.body.removeChild(iframe);
+                URL.revokeObjectURL(blobUrl);
+            }, 1500);
+        };
+
+        // Asignar src DESPUÉS del onload dispara la carga confiablemente
+        iframe.src = blobUrl;
     };
 
     const handlePrint = () => {
