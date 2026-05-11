@@ -44,6 +44,7 @@ export default function PointOfSalePage() {
     const [isClientModalOpen, setIsClientModalOpen] = useState(false);
     const [completedSale, setCompletedSale] = useState<Sale | null>(null);
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+    const [shouldAutoPrintPOS, setShouldAutoPrintPOS] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'Efectivo' | 'Transferencia'>('Efectivo');
     const [isClosedSessionModalOpen, setIsClosedSessionModalOpen] = useState(false);
     const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
@@ -214,6 +215,22 @@ export default function PointOfSalePage() {
             }
         } finally {
             setIsProcessing(false);
+        }
+    };
+
+    // Load full sale details before opening the modal (ensures saleDetails are present for printing)
+    const handleOpenDetailsModal = async (autoPrint: boolean = false) => {
+        if (!completedSale?.id) return;
+        try {
+            const fullSale = await saleService.getById(completedSale.id);
+            setCompletedSale(fullSale);
+            setShouldAutoPrintPOS(autoPrint);
+            setIsDetailsModalOpen(true);
+        } catch (err) {
+            console.error('Error loading sale details for print', err);
+            // Fallback: open with what we have
+            setShouldAutoPrintPOS(autoPrint);
+            setIsDetailsModalOpen(true);
         }
     };
 
@@ -706,7 +723,7 @@ export default function PointOfSalePage() {
 
                         <div className="space-y-3">
                             <button
-                                onClick={() => setIsDetailsModalOpen(true)}
+                                onClick={() => handleOpenDetailsModal(false)}
                                 className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all shadow-xl shadow-indigo-600/20 flex items-center justify-center gap-3"
                             >
                                 <Eye size={16} />
@@ -733,8 +750,9 @@ export default function PointOfSalePage() {
             {/* Sale Details & Printing Modal */}
             <SaleDetailsModal
                 isOpen={isDetailsModalOpen}
-                onClose={() => setIsDetailsModalOpen(false)}
+                onClose={() => { setIsDetailsModalOpen(false); setShouldAutoPrintPOS(false); }}
                 sale={completedSale}
+                autoPrint={shouldAutoPrintPOS}
             />
 
             {cart.length > 0 && !isMobileCartOpen && (

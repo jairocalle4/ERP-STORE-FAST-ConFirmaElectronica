@@ -27,6 +27,7 @@ export default function ReportsPage() {
         start: new Date(new Date().setMonth(new Date().getMonth() - 6)).toISOString().split('T')[0],
         end: new Date().toISOString().split('T')[0]
     });
+    const [activeQuickFilter, setActiveQuickFilter] = useState<'today' | '7' | '30' | 'custom'>('custom');
 
     const [kpi, setKpi] = useState<KpiStats | null>(null);
     const [trends, setTrends] = useState<SalesTrend[]>([]);
@@ -64,10 +65,17 @@ export default function ReportsPage() {
         }
     };
 
-    const handleQuickFilter = (days: number) => {
+    const handleQuickFilter = (filter: 'today' | '7' | '30') => {
         const end = new Date();
         const start = new Date();
-        start.setDate(end.getDate() - days);
+        if (filter === 'today') {
+            // same day
+        } else if (filter === '7') {
+            start.setDate(end.getDate() - 7);
+        } else if (filter === '30') {
+            start.setDate(end.getDate() - 30);
+        }
+        setActiveQuickFilter(filter);
         setDateRange({
             start: start.toISOString().split('T')[0],
             end: end.toISOString().split('T')[0]
@@ -77,6 +85,14 @@ export default function ReportsPage() {
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('es-EC', {
             year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+        });
+    };
+
+    // Format a YYYY-MM-DD string safely without UTC shift
+    const formatDateLabel = (dateStr: string) => {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        return new Date(year, month - 1, day).toLocaleDateString('es-EC', {
+            year: 'numeric', month: '2-digit', day: '2-digit'
         });
     };
 
@@ -329,20 +345,41 @@ export default function ReportsPage() {
                     <input
                         type="date"
                         value={dateRange.start}
-                        onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                        onChange={(e) => { setDateRange({ ...dateRange, start: e.target.value }); setActiveQuickFilter('custom'); }}
                         className="bg-transparent text-sm font-medium text-slate-700 outline-none border-b border-transparent focus:border-indigo-500 transition-colors"
                     />
                     <span className="text-slate-300">|</span>
                     <input
                         type="date"
                         value={dateRange.end}
-                        onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                        onChange={(e) => { setDateRange({ ...dateRange, end: e.target.value }); setActiveQuickFilter('custom'); }}
                         className="bg-transparent text-sm font-medium text-slate-700 outline-none border-b border-transparent focus:border-indigo-500 transition-colors"
                     />
                     <div className="h-6 w-px bg-slate-200 mx-1"></div>
-                    <button onClick={() => handleQuickFilter(7)} className="text-xs font-bold text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded-lg transition-colors">7 Días</button>
-                    <button onClick={() => handleQuickFilter(30)} className="text-xs font-bold text-slate-500 hover:bg-slate-50 px-2 py-1 rounded-lg transition-colors">30 Días</button>
-                    <button onClick={() => handleQuickFilter(0)} className="text-xs font-bold text-slate-500 hover:bg-slate-50 px-2 py-1 rounded-lg transition-colors">Hoy</button>
+                    <button
+                        onClick={() => handleQuickFilter('today')}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
+                            activeQuickFilter === 'today'
+                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
+                                : 'text-slate-500 hover:bg-slate-100'
+                        }`}
+                    >Hoy</button>
+                    <button
+                        onClick={() => handleQuickFilter('7')}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
+                            activeQuickFilter === '7'
+                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
+                                : 'text-slate-500 hover:bg-slate-100'
+                        }`}
+                    >7 Días</button>
+                    <button
+                        onClick={() => handleQuickFilter('30')}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
+                            activeQuickFilter === '30'
+                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
+                                : 'text-slate-500 hover:bg-slate-100'
+                        }`}
+                    >30 Días</button>
                 </div>
             </div>
 
@@ -628,7 +665,7 @@ export default function ReportsPage() {
                             </h3>
                             <p className="text-xs text-slate-400 font-medium mt-1">
                                 Registro línea por línea de cada venta: vendedor, productos, ingresos, costo y ganancia bruta —
-                                período <span className="text-indigo-500 font-bold">{new Date(dateRange.start).toLocaleDateString('es-EC')} al {new Date(dateRange.end).toLocaleDateString('es-EC')}</span>
+                                período <span className="text-indigo-500 font-bold">{formatDateLabel(dateRange.start)} al {formatDateLabel(dateRange.end)}</span>
                                 · <span className="font-bold text-slate-600">{salesProfit.length} registros</span>
                             </p>
                         </div>

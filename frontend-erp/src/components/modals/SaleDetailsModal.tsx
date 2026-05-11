@@ -59,6 +59,21 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({ isOpen, onClose, sa
         });
     };
 
+    const openPrintWindow = (htmlContent: string) => {
+        const printWin = window.open('about:blank', '_blank', 'width=900,height=700,left=100,top=100');
+        if (!printWin) {
+            alert('Tu navegador bloqueó la ventana de impresión. Por favor permite ventanas emergentes para este sitio.');
+            return;
+        }
+        printWin.document.open();
+        printWin.document.write(htmlContent);
+        printWin.document.close();
+        setTimeout(() => {
+            printWin.focus();
+            printWin.print();
+        }, 600);
+    };
+
     const handlePrint = () => {
         if (!sale) return;
 
@@ -71,98 +86,75 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({ isOpen, onClose, sa
             : '';
         const accessKey = saleAny.accessKey || '';
 
-        // Formato clave de acceso en bloques de 10 para facilitar lectura
         const accessKeyFormatted = accessKey
             ? accessKey.match(/.{1,10}/g)?.join(' ') ?? accessKey
             : '';
 
-        const windowPrint = window.open('', '', 'left=0,top=0,width=800,height=900,toolbar=0,scrollbars=0,status=0');
-        if (!windowPrint) return;
-
-        windowPrint.document.write(`
+        // Build ticket HTML
+        const ticketHTML = `
+            <!DOCTYPE html>
             <html>
                 <head>
+                    <meta charset="utf-8">
                     <title>${isElectronic && isAuthorized ? 'FACTURA ELECTRÓNICA' : 'Ticket de Venta'} # ${sale.noteNumber || sale.id}</title>
                     <style>
                         @page { size: 80mm auto; margin: 0; }
-                        body { 
-                            font-family: 'Courier New', Courier, monospace; 
-                            width: 80mm; 
+                        * { box-sizing: border-box; }
+                        body {
+                            font-family: 'Courier New', Courier, monospace;
+                            width: 80mm;
                             padding: 4mm;
-                            margin: 0;
+                            margin: 0 auto;
                             font-size: 11px;
-                            line-height: 1.3;
+                            line-height: 1.4;
+                            color: #000;
                         }
                         .text-center { text-align: center; }
                         .text-right { text-align: right; }
                         .bold { font-weight: bold; }
-                        .divider { border-top: 1px dashed #000; margin: 4mm 0; }
-                        .divider-solid { border-top: 1px solid #000; margin: 4mm 0; }
-                        .header { margin-bottom: 4mm; }
-                        .store-name { font-size: 15px; font-weight: bold; margin-bottom: 1mm; }
-                        .doc-type { font-size: 12px; font-weight: bold; border: 1px solid #000; padding: 2mm; margin: 2mm 0; display: inline-block; }
-                        .info-row { display: flex; justify-content: space-between; margin-bottom: 1mm; font-size: 11px; }
+                        .divider { border-top: 1px dashed #000; margin: 3mm 0; }
+                        .divider-solid { border-top: 1px solid #000; margin: 3mm 0; }
+                        .store-name { font-size: 14px; font-weight: bold; margin-bottom: 1mm; }
+                        .doc-type { font-size: 11px; font-weight: bold; border: 1px solid #000; padding: 1mm 3mm; margin: 2mm auto; display: inline-block; }
+                        .info-row { display: flex; justify-content: space-between; margin-bottom: 1mm; font-size: 10px; }
                         table { width: 100%; border-collapse: collapse; margin: 2mm 0; }
-                        th { text-align: left; border-bottom: 1px solid #000; padding-bottom: 1mm; font-size: 10px; }
-                        td { padding: 1mm 0; vertical-align: top; font-size: 11px; }
+                        th { text-align: left; border-bottom: 1px solid #000; padding-bottom: 1mm; font-size: 9px; text-transform: uppercase; }
+                        td { padding: 1mm 0; vertical-align: top; font-size: 10px; }
                         .total-section { margin-top: 2mm; }
-                        .total-row { display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; }
-                        .sub-row { display: flex; justify-content: space-between; font-size: 10px; color: #444; margin-bottom: 0.5mm; }
-                        .footer { margin-top: 6mm; font-size: 9px; }
+                        .total-row { display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; }
+                        .sub-row { display: flex; justify-content: space-between; font-size: 9px; color: #555; margin-bottom: 0.5mm; }
+                        .footer { margin-top: 5mm; font-size: 9px; text-align: center; }
                         .sri-section { margin-top: 3mm; padding: 2mm; border: 1px solid #000; font-size: 9px; }
                         .sri-title { font-weight: bold; font-size: 10px; text-align: center; margin-bottom: 2mm; }
-                        .access-key { font-size: 7.5px; letter-spacing: 0.5px; word-break: break-all; text-align: center; margin: 1mm 0; }
-                        .rimpe-legend { font-size: 9px; text-align: center; font-style: italic; border-top: 1px dashed #000; margin-top: 2mm; padding-top: 2mm; }
-                        .auth-ok { font-weight: bold; text-align: center; font-size: 11px; }
+                        .access-key { font-size: 7px; letter-spacing: 0.3px; word-break: break-all; text-align: center; margin: 1mm 0; }
+                        .rimpe-legend { font-size: 8px; text-align: center; font-style: italic; border-top: 1px dashed #000; margin-top: 2mm; padding-top: 2mm; }
+                        .auth-ok { font-weight: bold; text-align: center; font-size: 10px; }
                         .auth-pending { font-size: 9px; text-align: center; color: #555; font-style: italic; }
                     </style>
                 </head>
                 <body>
-                    <div class="text-center header">
+                    <div class="text-center">
                         <div class="store-name">${company?.name || 'ERP STORE FAST'}</div>
-                        ${isElectronic ? `<div class="doc-type">FACTURA</div>` : ''}
+                        ${isElectronic ? `<div><span class="doc-type">FACTURA</span></div>` : ''}
                         <div>RUC: ${company?.ruc || '0000000000001'}</div>
-                        <div>Dir: ${company?.address || ''}</div>
-                        <div>Telf: ${company?.phone || ''}</div>
+                        ${company?.address ? `<div>Dir: ${company.address}</div>` : ''}
+                        ${company?.phone ? `<div>Telf: ${company.phone}</div>` : ''}
                         ${isElectronic ? `<div>Est: ${company?.establishment || '001'} &nbsp; P.E: ${company?.pointOfIssue || '001'}</div>` : ''}
                     </div>
 
                     <div class="divider"></div>
 
-                    <div class="info-row">
-                        <span>${isElectronic ? 'Nº FACTURA:' : '# NOTA:'}</span>
-                        <span class="bold">${sale.noteNumber || `V-${sale.id}`}</span>
-                    </div>
-                    <div class="info-row">
-                        <span>FECHA:</span>
-                        <span>${new Date(sale.date).toLocaleString('es-EC')}</span>
-                    </div>
-                    <div class="info-row">
-                        <span>CLIENTE:</span>
-                        <span class="bold">${sale.client?.name || 'CONSUMIDOR FINAL'}</span>
-                    </div>
-                    <div class="info-row">
-                        <span>C.I./RUC:</span>
-                        <span>${sale.client?.cedulaRuc || '9999999999'}</span>
-                    </div>
-                    <div class="info-row">
-                        <span>VENDEDOR:</span>
-                        <span>${sale.employee?.name || 'Sistema'}</span>
-                    </div>
-                    <div class="info-row">
-                        <span>PAGO:</span>
-                        <span class="bold">${sale.paymentMethod?.toUpperCase() || 'EFECTIVO'}</span>
-                    </div>
+                    <div class="info-row"><span>${isElectronic ? 'Nº FACTURA:' : '# NOTA:'}</span><span class="bold">${sale.noteNumber || `V-${sale.id}`}</span></div>
+                    <div class="info-row"><span>FECHA:</span><span>${new Date(sale.date).toLocaleString('es-EC')}</span></div>
+                    <div class="info-row"><span>CLIENTE:</span><span class="bold">${sale.client?.name || 'CONSUMIDOR FINAL'}</span></div>
+                    <div class="info-row"><span>C.I./RUC:</span><span>${sale.client?.cedulaRuc || '9999999999'}</span></div>
+                    <div class="info-row"><span>VENDEDOR:</span><span>${sale.employee?.name || 'Sistema'}</span></div>
+                    <div class="info-row"><span>PAGO:</span><span class="bold">${sale.paymentMethod?.toUpperCase() || 'EFECTIVO'}</span></div>
 
                     <div class="divider"></div>
 
                     <table>
-                        <thead>
-                            <tr>
-                                <th>CANT. PRODUCTO</th>
-                                <th class="text-right">TOTAL</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th>CANT. PRODUCTO</th><th class="text-right">TOTAL</th></tr></thead>
                         <tbody>
                             ${(sale.saleDetails || []).map(detail => `
                                 <tr>
@@ -170,7 +162,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({ isOpen, onClose, sa
                                     <td class="text-right">$${(detail.unitPrice * detail.quantity).toFixed(2)}</td>
                                 </tr>
                                 <tr>
-                                    <td colspan="2" style="font-size: 9px; color: #666; padding-top: 0;">P.U: $${detail.unitPrice.toFixed(2)}</td>
+                                    <td colspan="2" style="font-size:8px;color:#666;padding-top:0;">P.U: $${detail.unitPrice.toFixed(2)}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -183,10 +175,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({ isOpen, onClose, sa
                         <div class="sub-row"><span>SUBTOTAL IVA ${isElectronic ? '15' : '0'}%:</span><span>$0.00</span></div>
                         <div class="sub-row"><span>IVA (15%):</span><span>$0.00</span></div>
                         <div class="divider-solid"></div>
-                        <div class="total-row">
-                            <span>TOTAL A PAGAR:</span>
-                            <span>$${sale.total.toFixed(2)}</span>
-                        </div>
+                        <div class="total-row"><span>TOTAL A PAGAR:</span><span>$${sale.total.toFixed(2)}</span></div>
                     </div>
 
                     ${isElectronic ? `
@@ -195,34 +184,101 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({ isOpen, onClose, sa
                         ${isAuthorized ? `
                             <div class="auth-ok">✓ AUTORIZADO</div>
                             <div class="info-row" style="margin-top:1mm;"><span>Nº AUTORIZACIÓN:</span></div>
-                            <div style="font-size:8px; word-break:break-all; text-align:center; margin:0.5mm 0;">${authNumber}</div>
+                            <div style="font-size:8px;word-break:break-all;text-align:center;margin:0.5mm 0;">${authNumber}</div>
                             <div class="info-row"><span>FECHA AUTORIZACIÓN:</span><span>${authDate}</span></div>
-                        ` : `
-                            <div class="auth-pending">○ PENDIENTE DE AUTORIZACIÓN</div>
-                        `}
+                        ` : `<div class="auth-pending">○ PENDIENTE DE AUTORIZACIÓN</div>`}
                         <div class="info-row" style="margin-top:1mm;"><span>CLAVE DE ACCESO:</span></div>
                         <div class="access-key">${accessKeyFormatted}</div>
-                        <div class="rimpe-legend">
-                            CONTRIBUYENTE RÉGIMEN RIMPE<br/>
-                            NEGOCIO POPULAR - NO COBRA IVA
-                        </div>
-                    </div>
-                    ` : ''}
+                        <div class="rimpe-legend">CONTRIBUYENTE RÉGIMEN RIMPE<br/>NEGOCIO POPULAR - NO COBRA IVA</div>
+                    </div>` : ''}
 
-                    <div class="footer text-center">
+                    <div class="footer">
                         <div class="bold">¡GRACIAS POR SU COMPRA!</div>
-                        <div>${company?.legalMessage || 'Este documento es un comprobante de venta.<br/>Conserve su ticket para cambios o devoluciones.'}</div>
+                        <div>${company?.legalMessage || 'Conserve su ticket para cambios o devoluciones.'}</div>
                     </div>
                 </body>
-            </html>
-        `);
+            </html>`;
 
-        windowPrint.document.close();
-        windowPrint.focus();
-        setTimeout(() => {
-            windowPrint.print();
-            windowPrint.close();
-        }, 250);
+        openPrintWindow(ticketHTML);
+    };
+
+    const handlePrintInvoice = () => {
+        if (!sale) return;
+        const saleAny = sale as any;
+        const isElectronic = !!saleAny.isElectronic;
+        const isAuthorized = saleAny.electronicStatus === 'AUTORIZADO';
+        const subtotal = sale.total;
+        const invoiceHTML = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8">
+<title>Factura ${sale.noteNumber || sale.id}</title>
+<style>
+  @page { size: A4; margin: 20mm 15mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #1e293b; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #4f46e5; padding-bottom: 12px; margin-bottom: 16px; }
+  .company-name { font-size: 22px; font-weight: 900; color: #4f46e5; }
+  .company-info { font-size: 10px; color: #64748b; margin-top: 4px; }
+  .doc-box { border: 2px solid #4f46e5; border-radius: 8px; padding: 12px 20px; text-align: center; }
+  .doc-box .label { font-size: 9px; text-transform: uppercase; color: #64748b; letter-spacing: 1px; }
+  .doc-box .num { font-size: 18px; font-weight: 900; color: #4f46e5; }
+  .doc-box .date { font-size: 10px; color: #475569; margin-top: 4px; }
+  .parties { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .party-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
+  .party-label { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; margin-bottom: 6px; }
+  .party-name { font-size: 13px; font-weight: 700; color: #1e293b; }
+  .party-detail { font-size: 10px; color: #64748b; margin-top: 2px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+  thead tr { background: #4f46e5; color: white; }
+  thead th { padding: 8px 10px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  thead th.right { text-align: right; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; font-size: 11px; }
+  tbody td.right { text-align: right; font-weight: 600; }
+  .totals { width: 260px; margin-left: auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+  .totals-row { display: flex; justify-content: space-between; padding: 7px 14px; font-size: 11px; }
+  .totals-row.total { background: #1e293b; color: white; font-weight: 900; font-size: 14px; }
+  .fe-banner { margin-top: 16px; border: 2px dashed #f59e0b; border-radius: 8px; padding: 10px 14px; background: #fffbeb; font-size: 10px; color: #92400e; text-align: center; }
+  .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 9px; color: #94a3b8; }
+</style></head><body>
+<div class="header">
+  <div>
+    <div class="company-name">${company?.name || 'ERP STORE FAST'}</div>
+    <div class="company-info">RUC: ${company?.ruc || '—'} | Tel: ${company?.phone || '—'}<br/>${company?.address || ''}</div>
+  </div>
+  <div class="doc-box">
+    <div class="label">${isElectronic ? 'Factura Electrónica' : 'Nota de Venta'}</div>
+    <div class="num">${sale.noteNumber || `V-${sale.id}`}</div>
+    <div class="date">Fecha: ${new Date(sale.date).toLocaleDateString('es-EC')}</div>
+  </div>
+</div>
+<div class="parties">
+  <div class="party-box">
+    <div class="party-label">Cliente</div>
+    <div class="party-name">${sale.client?.name || 'Consumidor Final'}</div>
+    <div class="party-detail">C.I./RUC: ${sale.client?.cedulaRuc || '9999999999'}</div>
+  </div>
+  <div class="party-box">
+    <div class="party-label">Vendedor / Método de Pago</div>
+    <div class="party-name">${sale.employee?.name || 'Sistema'}</div>
+    <div class="party-detail">${sale.paymentMethod || 'Efectivo'}</div>
+  </div>
+</div>
+<table>
+  <thead><tr><th>#</th><th>Producto</th><th class="right">P. Unit.</th><th class="right">Cant.</th><th class="right">Subtotal</th></tr></thead>
+  <tbody>
+    ${(sale.saleDetails || []).map((d, i) => `<tr><td>${i+1}</td><td>${d.productName || d.product?.name || 'Producto'}</td><td class="right">$${d.unitPrice.toFixed(2)}</td><td class="right">${d.quantity}</td><td class="right">$${(d.unitPrice * d.quantity).toFixed(2)}</td></tr>`).join('')}
+  </tbody>
+</table>
+<div class="totals">
+  <div class="totals-row"><span>Subtotal IVA 0%</span><span>$${subtotal.toFixed(2)}</span></div>
+  <div class="totals-row"><span>IVA (0%)</span><span>$0.00</span></div>
+  <div class="totals-row total"><span>TOTAL</span><span>$${subtotal.toFixed(2)}</span></div>
+</div>
+${!isElectronic ? `<div class="fe-banner">⚠ Facturación Electrónica pendiente de configuración. Una vez habilitada, este documento se emitirá como Factura Electrónica SRI ${isAuthorized ? '✓ AUTORIZADO' : ''}.</div>` : ''}
+<div class="footer">${company?.name || 'ERP STORE FAST'} · Generado el ${new Date().toLocaleDateString('es-EC')} · Documento interno</div>
+</body></html>`;
+        openPrintWindow(invoiceHTML);
     };
 
     const handleVoid = async () => {
@@ -431,7 +487,14 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({ isOpen, onClose, sa
                                 className="flex-1 py-4 bg-white border border-slate-200 hover:border-indigo-600 hover:text-indigo-600 text-slate-600 rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-3 shadow-sm hover:shadow-xl hover:shadow-indigo-500/10"
                             >
                                 <Printer size={18} />
-                                Imprimir Ticket
+                                Ticket 80mm
+                            </button>
+                            <button
+                                onClick={handlePrintInvoice}
+                                className="flex-1 py-4 bg-indigo-50 border border-indigo-200 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 text-indigo-700 rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-3 shadow-sm"
+                            >
+                                <FileText size={18} />
+                                Factura A4
                             </button>
                             {/* FE: XML & RIDE download buttons if authorized */}
                             {(sale as any).isElectronic && (
