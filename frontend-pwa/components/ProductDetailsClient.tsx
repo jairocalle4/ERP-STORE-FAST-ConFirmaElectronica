@@ -298,9 +298,11 @@ export default function ProductDetailsClient({ id }: { id: string }) {
                                     <button
                                         onClick={() => {
                                             if (navigator.share) {
+                                                const category = product.category?.name || "Producto";
+                                                const price = `$${product.price.toFixed(2)}`;
                                                 navigator.share({
                                                     title: product.name,
-                                                    text: product.description,
+                                                    text: `${category} • ${price} — JCTech Store`,
                                                     url: window.location.href,
                                                 });
                                             }

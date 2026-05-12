@@ -13,33 +13,46 @@ export async function generateMetadata(
 
     try {
         const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5140/api/v1";
-        const res = await fetch(`${API_URL}/products/${id}`);
-        if (!res.ok) return { title: "Producto no encontrado" };
+        const res = await fetch(`${API_URL}/products/${id}`, { next: { revalidate: 3600 } });
+        if (!res.ok) return { title: "Producto | JCTech Store" };
 
         const product = await res.json();
-        const imageUrl = product.images?.find((img: any) => img.isCover)?.url || product.images?.[0]?.url;
+        const coverImage = product.images?.find((img: any) => img.isCover)?.url || product.images?.[0]?.url;
+        const category = product.category?.name || "Producto";
+        const price = product.price ? `$${Number(product.price).toFixed(2)}` : "";
+
+        // Minimal, elegant tagline — no long description
+        const tagline = price
+            ? `${category} • ${price} — JCTech Store`
+            : `${category} — JCTech Store`;
+
+        const productUrl = `https://tienda-pwa.vercel.app/product/${id}`;
 
         return {
-            title: product.name,
-            description: product.description?.substring(0, 160) || "Detalles del producto",
+            title: `${product.name} | JCTech Store`,
+            description: tagline,
             openGraph: {
                 title: product.name,
-                description: product.description?.substring(0, 160) || "Detalles del producto",
-                images: imageUrl ? [imageUrl] : [],
-                url: `https://faststore.dominioprueba.com/product/${id}`,
+                description: tagline,
+                images: coverImage
+                    ? [{ url: coverImage, width: 800, height: 800, alt: product.name }]
+                    : [],
+                url: productUrl,
                 type: 'website',
+                siteName: 'JCTech Store',
+                locale: 'es_EC',
             },
             twitter: {
                 card: "summary_large_image",
                 title: product.name,
-                description: product.description?.substring(0, 160) || "Detalles del producto",
-                images: imageUrl ? [imageUrl] : [],
+                description: tagline,
+                images: coverImage ? [coverImage] : [],
             },
         };
     } catch (error) {
         return {
-            title: "Producto no encontrado",
-            description: "No pudimos encontrar el producto que buscas.",
+            title: "Producto | JCTech Store",
+            description: "Descubre nuestros productos en JCTech Store.",
         };
     }
 }
