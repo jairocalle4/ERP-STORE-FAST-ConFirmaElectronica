@@ -99,12 +99,12 @@ export default function Navbar({ showSearch, searchValue, onSearchChange }: Navb
                         <div className="flex items-center gap-3">
 
                             {/* User removed as per request */}
-                        {/* Theme Toggle */}
+                        {/* Theme Toggle - Visible in both modes */}
                             <button
                                 onClick={cycleTheme}
                                 title={`Tema: ${THEME_LABELS[theme]}`}
                                 aria-label={`Cambiar tema — ${THEME_LABELS[theme]}`}
-                                className="relative group p-2.5 rounded-xl bg-white/70 dark:bg-slate-800/70 border border-slate-200/60 dark:border-slate-700/60 text-slate-500 dark:text-slate-300 hover:text-primary dark:hover:text-primary/80 hover:border-primary/30 transition-all backdrop-blur-sm shadow-sm"
+                                className="relative group p-2.5 rounded-xl bg-indigo-50 dark:bg-slate-700 border border-indigo-200 dark:border-slate-600 text-indigo-600 dark:text-slate-200 hover:bg-indigo-100 dark:hover:bg-slate-600 hover:scale-105 active:scale-95 transition-all shadow-sm"
                             >
                                 <ThemeIcon size={18} className="transition-all duration-300" />
                                 <span className="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-slate-700 text-white text-[10px] font-bold px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
@@ -156,7 +156,15 @@ export default function Navbar({ showSearch, searchValue, onSearchChange }: Navb
                                 </Link>
                             ))}
 
-                            {/* Mobile quick actions removed */}
+                            {/* Theme Toggle in mobile menu */}
+                            <button
+                                onClick={() => { cycleTheme(); setIsMenuOpen(false); }}
+                                className="mt-4 flex items-center gap-3 px-6 py-3 rounded-2xl bg-indigo-50 dark:bg-slate-800 border border-indigo-200 dark:border-slate-700 text-indigo-600 dark:text-slate-200 font-bold text-sm animate-slide-in-up"
+                                style={{ animationDelay: '500ms' }}
+                            >
+                                <ThemeIcon size={20} />
+                                <span>Modo {THEME_LABELS[theme]}</span>
+                            </button>
                         </div>
                     </div>
                 )

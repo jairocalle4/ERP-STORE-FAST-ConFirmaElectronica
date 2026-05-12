@@ -287,7 +287,7 @@ export default function PointOfSalePage() {
                                 <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-indigo-600" size={16} />
                                 <input
                                     type="text"
-                                    className="w-full pl-9 md:pl-11 pr-3 py-2 md:py-3 bg-white/80 border border-slate-200/60 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/50 outline-none text-slate-700 text-sm md:text-base font-medium transition-all"
+                                    className="w-full pl-9 md:pl-11 pr-3 py-2 md:py-3 bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/50 outline-none text-slate-700 dark:text-slate-200 text-sm md:text-base font-medium transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                     placeholder="Buscar..."
                                     value={searchTerm}
                                     onChange={e => setSearchTerm(e.target.value)}
@@ -301,7 +301,7 @@ export default function PointOfSalePage() {
                             onClick={() => setSelectedCategory(null)}
                             className={`px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl border transition-all flex items-center gap-2 whitespace-nowrap group font-bold text-xs md:text-sm tracking-tight ${selectedCategory === null
                                 ? 'bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-900/20'
-                                : 'bg-white/60 border-white/60 text-slate-600 hover:bg-white hover:border-slate-200'
+                                : 'bg-white/60 dark:bg-slate-800/60 border-white/60 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:border-slate-200'
                                 }`}
                         >
                             <LayoutGrid size={14} className={selectedCategory === null ? 'text-indigo-400' : 'text-slate-400'} />
@@ -314,7 +314,7 @@ export default function PointOfSalePage() {
                                 onClick={() => setSelectedCategory(cat.id)}
                                 className={`px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl border transition-all flex items-center gap-2 whitespace-nowrap group font-bold text-xs md:text-sm tracking-tight ${selectedCategory === cat.id
                                     ? 'bg-indigo-600 text-white border-indigo-600 shadow-xl shadow-indigo-600/20'
-                                    : 'bg-white/60 border-white/60 text-slate-600 hover:bg-white hover:border-slate-200'
+                                    : 'bg-white/60 dark:bg-slate-800/60 border-white/60 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:border-slate-200'
                                     }`}
                             >
                                 <Tag size={14} className={selectedCategory === cat.id ? 'text-indigo-200' : 'text-slate-400 group-hover:text-indigo-50'} />
@@ -344,11 +344,11 @@ export default function PointOfSalePage() {
                                             <div
                                                 key={product.id}
                                                 onClick={() => addToCart(product)}
-                                                className={`group relative bg-white/60 border-2 rounded-3xl p-4 transition-all hover:-translate-y-1 cursor-pointer overflow-hidden ${(!product.isService && product.stock <= 0)
-                                                    ? 'opacity-60 grayscale border-slate-100 cursor-not-allowed'
+                                                className={`group relative bg-white/60 dark:bg-slate-800/70 border-2 rounded-3xl p-4 transition-all hover:-translate-y-1 cursor-pointer overflow-hidden ${(!product.isService && product.stock <= 0)
+                                                    ? 'opacity-60 grayscale border-slate-100 dark:border-slate-700 cursor-not-allowed'
                                                     : inCart
-                                                        ? 'border-indigo-500 bg-white ring-4 ring-indigo-500/5'
-                                                        : 'border-white/60 hover:border-indigo-200 hover:bg-white hover:shadow-2xl hover:shadow-indigo-500/5'
+                                                        ? 'border-indigo-500 bg-white dark:bg-slate-700 ring-4 ring-indigo-500/5'
+                                                        : 'border-white/60 dark:border-slate-700/60 hover:border-indigo-200 hover:bg-white dark:hover:bg-slate-700 hover:shadow-2xl hover:shadow-indigo-500/5'
                                                     }`}
                                             >
                                                 {inCart && (
@@ -357,7 +357,7 @@ export default function PointOfSalePage() {
                                                     </div>
                                                 )}
 
-                                                <div className="aspect-square rounded-2xl bg-slate-50 mb-3 overflow-hidden flex items-center justify-center border border-slate-100 relative group-hover:bg-white transition-colors">
+                                                <div className="aspect-square rounded-2xl bg-slate-50 dark:bg-slate-700 mb-3 overflow-hidden flex items-center justify-center border border-slate-100 dark:border-slate-600 relative group-hover:bg-white dark:group-hover:bg-slate-600 transition-colors">
                                                     {product.images?.[0] ? (
                                                         <img src={product.images[0].url} alt={product.name} className="w-full h-full object-contain p-2 mix-blend-multiply transition-transform duration-500 group-hover:scale-110" />
                                                     ) : (
@@ -372,7 +372,7 @@ export default function PointOfSalePage() {
                                                 </div>
 
                                                 <div className="space-y-1">
-                                                    <h3 className="font-bold text-slate-800 text-sm leading-tight h-10 line-clamp-2 transition-colors group-hover:text-indigo-600">{product.name}</h3>
+                                                    <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-tight h-10 line-clamp-2 transition-colors group-hover:text-indigo-400">{product.name}</h3>
                                                     <div className="flex justify-between items-end gap-2">
                                                         <div>
                                                             <div className="flex items-center gap-1.5">
@@ -381,9 +381,9 @@ export default function PointOfSalePage() {
                                                                     {product.isService ? 'Servicio (∞)' : `Stock: ${product.stock}`}
                                                                 </p>
                                                             </div>
-                                                            <p className="text-lg font-black text-slate-900">${product.price.toFixed(2)}</p>
+                                                            <p className="text-lg font-black text-slate-900 dark:text-slate-100">${product.price.toFixed(2)}</p>
                                                         </div>
-                                                        <div className={`p-2 rounded-xl transition-all ${inCart ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600'}`}>
+                                                        <div className={`p-2 rounded-xl transition-all ${inCart ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-300 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/50 group-hover:text-indigo-600'}`}>
                                                             <Plus size={16} strokeWidth={3} />
                                                         </div>
                                                     </div>
@@ -410,19 +410,19 @@ export default function PointOfSalePage() {
                 <div
                     id="cart-section"
                     className={`
-                        fixed top-0 left-0 w-full h-full z-[100] bg-white flex flex-col transition-transform duration-500
-                        md:static md:z-auto md:w-auto md:bg-transparent md:col-span-5 xl:col-span-4 2xl:col-span-3 md:translate-y-0
+                        fixed top-0 left-0 w-full h-full z-[100] bg-white dark:bg-slate-900 flex flex-col transition-transform duration-500
+                        md:static md:z-auto md:w-auto md:bg-transparent dark:md:bg-transparent md:col-span-5 xl:col-span-4 2xl:col-span-3 md:translate-y-0
                         ${isMobileCartOpen ? 'translate-y-0' : 'translate-y-full md:translate-y-0'}
                     `}
                 >
                     {/* max-h on desktop is set via inline style since tailwind calc() can't reference CSS vars easily */}
                     <div
-                        className="h-full flex flex-col bg-white md:bg-white/60 landscape:md:bg-white/60 backdrop-blur-xl md:rounded-[2.5rem] border-t md:border border-white/60 shadow-2xl shadow-indigo-500/5 overflow-hidden"
+                        className="h-full flex flex-col bg-white dark:bg-slate-900 md:bg-white/60 dark:md:bg-slate-900/80 backdrop-blur-xl md:rounded-[2.5rem] border-t md:border border-white/60 dark:border-slate-700/50 shadow-2xl shadow-indigo-500/5 overflow-hidden"
                         style={{ maxHeight: 'calc(100vh - 100px)' }}
                     >
 
                         {/* Mobile Cart Header (Only visible on mobile) */}
-                        <div className="md:hidden flex items-center justify-between p-4 border-b border-indigo-50 bg-white shadow-sm shrink-0">
+                        <div className="md:hidden flex items-center justify-between p-4 border-b border-indigo-50 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm shrink-0">
                             <button
                                 onClick={() => setIsMobileCartOpen(false)}
                                 className="flex items-center gap-1 text-indigo-600 font-bold px-3 py-1.5 bg-indigo-50 rounded-xl active:scale-95 transition-all"
@@ -455,7 +455,7 @@ export default function PointOfSalePage() {
                         {/* Consumidor Final Toggle & Selected Client */}
                         <div className="p-6 border-b border-indigo-100/30 shrink-0">
                             {(!selectedClient || selectedClient.cedulaRuc === '9999999999') && (
-                                <div className="flex items-center justify-between bg-white p-4 rounded-3xl border border-indigo-50 shadow-sm">
+                                <div className="flex items-center justify-between bg-white dark:bg-slate-800 p-4 rounded-3xl border border-indigo-50 dark:border-slate-700 shadow-sm">
                                     <div className="flex items-center gap-3">
                                         <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${selectedClient?.cedulaRuc === '9999999999' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'bg-slate-100 text-slate-400'}`}>
                                             <User size={14} />
@@ -618,10 +618,10 @@ export default function PointOfSalePage() {
                                     onClick={() => setPaymentMethod('Efectivo')}
                                     className={`py-2 px-3 rounded-xl border-2 transition-all flex items-center justify-center gap-2 font-bold text-sm ${paymentMethod === 'Efectivo'
                                         ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-600/20'
-                                        : 'bg-white border-slate-100 text-slate-500 hover:border-indigo-200'
+                                        : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:border-indigo-200'
                                         }`}
                                 >
-                                    <div className={`p-1 rounded-lg ${paymentMethod === 'Efectivo' ? 'bg-white/20' : 'bg-slate-100'}`}>
+                                    <div className={`p-1 rounded-lg ${paymentMethod === 'Efectivo' ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-700'}`}>
                                         <CreditCard size={14} />
                                     </div>
                                     Efectivo
@@ -630,10 +630,10 @@ export default function PointOfSalePage() {
                                     onClick={() => setPaymentMethod('Transferencia')}
                                     className={`py-2 px-3 rounded-xl border-2 transition-all flex items-center justify-center gap-2 font-bold text-sm ${paymentMethod === 'Transferencia'
                                         ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-600/20'
-                                        : 'bg-white border-slate-100 text-slate-500 hover:border-indigo-200'
+                                        : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:border-indigo-200'
                                         }`}
                                 >
-                                    <div className={`p-1 rounded-lg ${paymentMethod === 'Transferencia' ? 'bg-white/20' : 'bg-slate-100'}`}>
+                                    <div className={`p-1 rounded-lg ${paymentMethod === 'Transferencia' ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-700'}`}>
                                         <ChevronRight size={14} className="rotate-45" />
                                     </div>
                                     Transferencia
@@ -642,10 +642,10 @@ export default function PointOfSalePage() {
                         </div>
 
                         {/* Summary & Checkout - Compact, always visible at bottom */}
-                        <div className="p-5 bg-white border-t-2 border-slate-50 shadow-[0_-20px_50px_rgba(0,0,0,0.03)] shrink-0">
+                        <div className="p-5 bg-white dark:bg-slate-900 border-t-2 border-slate-50 dark:border-slate-700/50 shadow-[0_-20px_50px_rgba(0,0,0,0.03)] shrink-0">
                             <div className="space-y-2 mb-4">
                                 <div className="flex justify-between items-end px-1">
-                                    <span className="text-sm font-black text-slate-800 uppercase tracking-widest">Total a Pagar</span>
+                                    <span className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest">Total a Pagar</span>
                                     <span className="text-3xl font-black text-indigo-600 tracking-tighter">
                                         <span className="text-lg font-bold mr-1">$</span>
                                         {calculateTotal().toFixed(2)}
@@ -655,7 +655,7 @@ export default function PointOfSalePage() {
                                 <div className="flex items-center justify-between px-3 py-2.5 bg-indigo-50/70 rounded-xl border border-indigo-100">
                                     <div className="flex items-center gap-2">
                                         <FileText size={14} className="text-indigo-500" />
-                                        <span className="text-xs font-black text-indigo-800">Factura Electrónica</span>
+                                        <span className="text-xs font-black text-indigo-800 dark:text-indigo-300">Factura Electrónica</span>
                                     </div>
                                     <button
                                         type="button"
@@ -672,7 +672,7 @@ export default function PointOfSalePage() {
                             <button
                                 onClick={handleCheckout}
                                 disabled={cart.length === 0 || isProcessing || !selectedClient}
-                                className="group relative w-full bg-slate-900 disabled:bg-slate-200 py-4 rounded-2xl font-black text-white transition-all hover:bg-slate-800 active:scale-95 shadow-xl shadow-slate-900/20 flex items-center justify-center gap-4"
+                                className="group relative w-full bg-slate-900 dark:bg-indigo-600 disabled:bg-slate-200 dark:disabled:bg-slate-700 py-4 rounded-2xl font-black text-white disabled:text-slate-400 dark:disabled:text-slate-500 transition-all hover:bg-slate-800 dark:hover:bg-indigo-700 active:scale-95 shadow-xl shadow-slate-900/20 flex items-center justify-center gap-4"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-600 opacity-0 group-hover:opacity-10 transition-opacity"></div>
                                 {isProcessing ? (
