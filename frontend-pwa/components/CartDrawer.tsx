@@ -124,9 +124,9 @@ export default function CartDrawer() {
             {/* Drawer */}
             <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
                 <div className="w-screen max-w-md animate-slide-in-right">
-                    <div className="h-full flex flex-col bg-white shadow-2xl rounded-l-[2.5rem] overflow-hidden">
+                    <div className="h-full flex flex-col bg-white dark:bg-slate-900 shadow-2xl rounded-l-[2.5rem] overflow-hidden">
                         {/* Header */}
-                        <div className="px-8 py-8 border-b border-slate-50 flex items-center justify-between">
+                        <div className="px-8 py-8 border-b border-slate-50 dark:border-slate-700/50 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
                                     <ShoppingBag size={24} />
@@ -138,7 +138,7 @@ export default function CartDrawer() {
                             </div>
                             <button
                                 onClick={() => setIsCartOpen(false)}
-                                className="p-3 rounded-2xl hover:bg-slate-50 text-muted-foreground transition-all active:scale-90"
+                                className="p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 text-muted-foreground transition-all active:scale-90"
                             >
                                 <X size={24} />
                             </button>
@@ -149,7 +149,7 @@ export default function CartDrawer() {
                             {view === 'cart' ? (
                                 cart.length === 0 ? (
                                     <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
-                                        <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center text-slate-200">
+                                        <div className="w-20 h-20 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-200 dark:text-slate-600">
                                             <ShoppingBag size={40} />
                                         </div>
                                         <p className="text-muted-foreground font-medium">Tu carrito está vacío</p>
@@ -164,7 +164,7 @@ export default function CartDrawer() {
                                     <div className="space-y-6">
                                         {cart.map((item) => (
                                             <div key={item.id} className="flex gap-4 group">
-                                                <div className="w-24 h-24 rounded-2xl bg-slate-100 overflow-hidden flex-shrink-0 animate-fade-in border border-slate-50">
+                                                <div className="w-24 h-24 rounded-2xl bg-slate-100 dark:bg-slate-800 overflow-hidden flex-shrink-0 animate-fade-in border border-slate-50 dark:border-slate-700">
                                                     <img
                                                         src={item.images?.[0]?.url || ""}
                                                         alt={item.name}
@@ -184,17 +184,17 @@ export default function CartDrawer() {
                                                     <p className="text-xs text-muted-foreground">Unit: ${item.price.toFixed(2)}</p>
 
                                                     <div className="flex items-center justify-between pt-2">
-                                                        <div className="flex items-center gap-1 bg-slate-50 rounded-xl p-1 border border-slate-100">
+                                                        <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 rounded-xl p-1 border border-slate-100 dark:border-slate-700">
                                                             <button
                                                                 onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                                                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white hover:shadow-sm text-slate-500 transition-all"
+                                                                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm text-slate-500 dark:text-slate-400 transition-all"
                                                             >
                                                                 <Minus size={14} />
                                                             </button>
                                                             <span className="w-8 text-center text-xs font-bold">{item.quantity}</span>
                                                             <button
                                                                 onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                                                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white hover:shadow-sm text-slate-500 transition-all"
+                                                                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm text-slate-500 dark:text-slate-400 transition-all"
                                                             >
                                                                 <Plus size={14} />
                                                             </button>
@@ -217,7 +217,7 @@ export default function CartDrawer() {
                                                 <div className="relative">
                                                     <input
                                                         type="text" name="name" placeholder="Nombre completo"
-                                                        className={`w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-sm font-medium outline-none focus:ring-2 transition-all text-foreground ${errors.name ? 'ring-2 ring-rose-500/50 bg-rose-50' : 'ring-primary/20'}`}
+                                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl px-6 py-4 text-sm font-medium outline-none focus:ring-2 transition-all text-foreground ${errors.name ? 'ring-2 ring-rose-500/50 bg-rose-50 dark:bg-rose-900/20' : 'ring-primary/20'}`}
                                                         value={formData.name} onChange={handleInputChange}
                                                     />
                                                     {errors.name && <p className="text-[10px] text-rose-500 font-bold mt-1 ml-4 animate-pulse">{errors.name}</p>}
@@ -225,7 +225,7 @@ export default function CartDrawer() {
                                                 <div className="relative text-foreground font-medium">
                                                     <input
                                                         type="tel" name="phone" placeholder="Número de WhatsApp (ej: 0991693863)"
-                                                        className={`w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-sm font-medium outline-none focus:ring-2 transition-all text-foreground ${errors.phone ? 'ring-2 ring-rose-500/50 bg-rose-50' : 'ring-primary/20'}`}
+                                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl px-6 py-4 text-sm font-medium outline-none focus:ring-2 transition-all text-foreground ${errors.phone ? 'ring-2 ring-rose-500/50 bg-rose-50 dark:bg-rose-900/20' : 'ring-primary/20'}`}
                                                         value={formData.phone} onChange={handleInputChange}
                                                     />
                                                     {errors.phone && <p className="text-[10px] text-rose-500 font-bold mt-1 ml-4 animate-pulse">{errors.phone}</p>}
@@ -241,7 +241,7 @@ export default function CartDrawer() {
                                                 <div>
                                                     <input
                                                         type="text" name="city" placeholder="Ciudad"
-                                                        className={`w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-sm font-medium outline-none focus:ring-2 transition-all text-foreground ${errors.city ? 'ring-2 ring-rose-500/50 bg-rose-50' : 'ring-primary/20'}`}
+                                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl px-6 py-4 text-sm font-medium outline-none focus:ring-2 transition-all text-foreground ${errors.city ? 'ring-2 ring-rose-500/50 bg-rose-50 dark:bg-rose-900/20' : 'ring-primary/20'}`}
                                                         value={formData.city} onChange={handleInputChange}
                                                     />
                                                     {errors.city && <p className="text-[10px] text-rose-500 font-bold mt-1 ml-4 animate-pulse">{errors.city}</p>}
@@ -249,7 +249,7 @@ export default function CartDrawer() {
                                                 <div>
                                                     <input
                                                         type="text" name="address" placeholder="Dirección exacta y referencia"
-                                                        className={`w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-sm font-medium outline-none focus:ring-2 transition-all text-foreground ${errors.address ? 'ring-2 ring-rose-500/50 bg-rose-50' : 'ring-primary/20'}`}
+                                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl px-6 py-4 text-sm font-medium outline-none focus:ring-2 transition-all text-foreground ${errors.address ? 'ring-2 ring-rose-500/50 bg-rose-50 dark:bg-rose-900/20' : 'ring-primary/20'}`}
                                                         value={formData.address} onChange={handleInputChange}
                                                     />
                                                     {errors.address && <p className="text-[10px] text-rose-500 font-bold mt-1 ml-4 animate-pulse">{errors.address}</p>}
@@ -279,7 +279,7 @@ export default function CartDrawer() {
 
                         {/* Footer */}
                         {cart.length > 0 && view !== 'success' && (
-                            <div className="px-8 py-10 border-t border-slate-50 bg-slate-50/30 space-y-6">
+                            <div className="px-8 py-10 border-t border-slate-50 dark:border-slate-700/50 bg-slate-50/30 dark:bg-slate-800/40 space-y-6">
                                 <div className="space-y-2">
                                     <div className="flex justify-between text-sm text-muted-foreground">
                                         <span>Subtotal</span>
@@ -308,7 +308,7 @@ export default function CartDrawer() {
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={() => setView('cart')}
-                                                className="px-6 rounded-2xl border border-slate-200 text-muted-foreground hover:bg-white hover:text-foreground transition-all"
+                                                className="px-6 rounded-2xl border border-slate-200 dark:border-slate-700 text-muted-foreground hover:bg-white dark:hover:bg-slate-800 hover:text-foreground transition-all"
                                             >
                                                 Atrás
                                             </button>

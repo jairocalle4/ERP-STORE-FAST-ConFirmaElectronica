@@ -70,7 +70,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
                 onClick={onClick}
             >
                 {/* Image Container */}
-                <div className={`relative aspect-[4/5] bg-white rounded-xl md:rounded-[1.8rem] mb-3 md:mb-4 flex items-center justify-center overflow-hidden border border-slate-100 p-4 shadow-inner ${isOutOfStock ? 'grayscale' : ''}`}>
+                <div className={`relative aspect-[4/5] bg-white dark:bg-slate-800 rounded-xl md:rounded-[1.8rem] mb-3 md:mb-4 flex items-center justify-center overflow-hidden border border-slate-100 dark:border-slate-700 p-4 shadow-inner ${isOutOfStock ? 'grayscale' : ''}`}>
                     {product.videoUrl && isHovered ? (
                         <div className="relative w-full h-full">
                             <video
@@ -124,7 +124,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
                     <div className={`absolute bottom-4 right-4 flex justify-end items-center transition-all duration-500 z-20 ${isHovered && !isOutOfStock ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
                         <button
                             onClick={toggleWishlist}
-                            className={`w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-lg transition-all transform active:scale-90 ${isWishlisted ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'}`}
+                            className={`w-10 h-10 rounded-xl bg-white dark:bg-slate-700 flex items-center justify-center shadow-lg transition-all transform active:scale-90 ${isWishlisted ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'}`}
                         >
                             <Heart size={20} fill={isWishlisted ? "currentColor" : "none"} />
                         </button>
@@ -154,7 +154,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
             </Link>
 
             {/* Footer */}
-            <div className="px-1 md:px-3 mt-2 md:mt-4 pt-3 md:pt-4 border-t border-slate-50 flex items-center justify-between pb-1 md:pb-2">
+            <div className="px-1 md:px-3 mt-2 md:mt-4 pt-3 md:pt-4 border-t border-slate-50 dark:border-slate-700 flex items-center justify-between pb-1 md:pb-2">
                 <div className="flex flex-col">
                     <span className={`text-base md:text-xl font-outfit font-black ${isOutOfStock ? 'text-slate-400 line-through decoration-2' : 'text-foreground'}`}>
                         ${product.price.toFixed(2)}
@@ -169,7 +169,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
                         if (!isOutOfStock) addToCart(product);
                     }}
                     disabled={isOutOfStock}
-                    className={`p-3 md:p-4 rounded-xl md:rounded-2xl shadow-lg transition-all group relative overflow-hidden ${isOutOfStock ? 'bg-slate-100 text-slate-300 cursor-not-allowed shadow-none' : 'premium-button shadow-primary/20'}`}
+                    className={`p-3 md:p-4 rounded-xl md:rounded-2xl shadow-lg transition-all group relative overflow-hidden ${isOutOfStock ? 'bg-slate-100 dark:bg-slate-700 text-slate-300 dark:text-slate-500 cursor-not-allowed shadow-none' : 'premium-button shadow-primary/20'}`}
                 >
                     <ShoppingCart size={16} className={`md:w-5 md:h-5 ${!isOutOfStock && 'group-active:scale-125 transition-transform'}`} />
                 </button>

@@ -19,7 +19,7 @@ export default function Hero() {
             <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 {/* Content */}
                 <div className="space-y-8 animate-fade-in relative z-10">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/50 backdrop-blur-md border border-white/20 rounded-full shadow-sm">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/50 dark:bg-slate-800/50 backdrop-blur-md border border-white/20 dark:border-slate-700/30 rounded-full shadow-sm">
                         <span className="w-2 h-2 bg-primary animate-pulse rounded-full"></span>
                         <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground">Colección 2026 Ya Disponible</span>
                     </div>
@@ -38,7 +38,7 @@ export default function Hero() {
                             <span>Comprar Ahora</span>
                             <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                         </Link>
-                        <Link href="/catalog?filter=offers" className="bg-white hover:bg-slate-50 text-foreground px-6 sm:px-10 py-4 sm:py-5 rounded-2xl font-bold flex items-center justify-center gap-3 shadow-lg shadow-black/5 transition-all active:scale-95 border border-slate-100">
+                        <Link href="/catalog?filter=offers" className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-foreground px-6 sm:px-10 py-4 sm:py-5 rounded-2xl font-bold flex items-center justify-center gap-3 shadow-lg shadow-black/5 transition-all active:scale-95 border border-slate-100 dark:border-slate-700">
                             <ShoppingBag size={18} />
                             <span>Ver Ofertas</span>
                         </Link>
@@ -49,7 +49,7 @@ export default function Hero() {
                             <p className="text-2xl sm:text-3xl font-outfit font-black text-foreground">15k+</p>
                             <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Clientes</p>
                         </div>
-                        <div className="w-px h-10 bg-slate-200"></div>
+                        <div className="w-px h-10 bg-slate-200 dark:bg-slate-700"></div>
                         <div>
                             <p className="text-2xl sm:text-3xl font-outfit font-black text-foreground">98%</p>
                             <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Satisfechos</p>

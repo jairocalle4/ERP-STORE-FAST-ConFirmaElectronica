@@ -25,7 +25,7 @@ export default function Footer() {
     }, []);
 
     return (
-        <footer className="bg-white border-t border-slate-100 pt-20 pb-10">
+        <footer className="bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 pt-20 pb-10">
             <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-5 gap-10">
                 <div className="space-y-4 col-span-2 md:col-span-1">
                     <Link href="/" className="flex items-center gap-2">
@@ -100,7 +100,7 @@ export default function Footer() {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-6 mt-20 pt-8 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="max-w-7xl mx-auto px-6 mt-20 pt-8 border-t border-slate-50 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
                 <p className="text-xs text-muted-foreground">
                     © 2026 {settings?.name || "FastStore Inc"}. Todos los derechos reservados.
                 </p>
