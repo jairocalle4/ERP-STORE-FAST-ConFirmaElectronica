@@ -1,15 +1,25 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { Product } from "@/types/product";
 
 interface CartItem extends Product {
     quantity: number;
 }
 
+// Fly-to-cart animation source rect
+export interface FlyOrigin {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    imageUrl?: string;
+    id: number; // unique per trigger
+}
+
 interface CartContextType {
     cart: CartItem[];
-    addToCart: (product: Product) => void;
+    addToCart: (product: Product, origin?: DOMRect) => void;
     removeFromCart: (productId: number) => void;
     updateQuantity: (productId: number, quantity: number) => void;
     clearCart: () => void;
@@ -17,6 +27,8 @@ interface CartContextType {
     totalPrice: number;
     isCartOpen: boolean;
     setIsCartOpen: (isOpen: boolean) => void;
+    flyOrigin: FlyOrigin | null;
+    clearFlyOrigin: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -24,6 +36,8 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: React.ReactNode }) {
     const [cart, setCart] = useState<CartItem[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [flyOrigin, setFlyOrigin] = useState<FlyOrigin | null>(null);
+    const flyIdRef = useRef(0);
 
     // Load cart from local storage on mount
     useEffect(() => {
@@ -42,7 +56,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("faststore_cart", JSON.stringify(cart));
     }, [cart]);
 
-    const addToCart = (product: Product) => {
+    const addToCart = useCallback((product: Product, origin?: DOMRect) => {
         setCart((prev) => {
             const existing = prev.find((item) => item.id === product.id);
             if (existing) {
@@ -52,8 +66,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             }
             return [...prev, { ...product, quantity: 1 }];
         });
-        setIsCartOpen(true);
-    };
+
+        // Trigger fly animation if origin provided — do NOT open the cart drawer
+        if (origin) {
+            flyIdRef.current += 1;
+            setFlyOrigin({
+                x: origin.x,
+                y: origin.y,
+                width: origin.width,
+                height: origin.height,
+                imageUrl: product.images?.[0]?.url,
+                id: flyIdRef.current,
+            });
+        }
+        // Note: we intentionally do NOT call setIsCartOpen(true) here anymore
+    }, []);
 
     const removeFromCart = (productId: number) => {
         setCart((prev) => prev.filter((item) => item.id !== productId));
@@ -72,6 +99,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     };
 
     const clearCart = () => setCart([]);
+    const clearFlyOrigin = useCallback(() => setFlyOrigin(null), []);
 
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
     const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -88,6 +116,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 totalPrice,
                 isCartOpen,
                 setIsCartOpen,
+                flyOrigin,
+                clearFlyOrigin,
             }}
         >
             {children}

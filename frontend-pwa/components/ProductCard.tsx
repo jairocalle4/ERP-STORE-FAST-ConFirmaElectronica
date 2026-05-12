@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Product } from '@/types/product';
 import { Play, ShoppingCart, Heart, Eye } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
@@ -14,6 +14,7 @@ interface ProductCardProps {
 export default function ProductCard({ product, onClick }: ProductCardProps) {
     const [isHovered, setIsHovered] = useState(false);
     const [isWishlisted, setIsWishlisted] = useState(false);
+    const addBtnRef = useRef<HTMLButtonElement>(null);
     const { addToCart } = useCart();
     const isOutOfStock = product.stock <= 0;
 
@@ -95,6 +96,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
                         <img
                             src={product.images.find(img => img.isCover)?.url || product.images[0].url}
                             alt={product.name}
+                            loading="lazy"
                             className="h-full w-full object-contain hover:object-cover transition-all duration-700 group-hover:scale-110 rounded-[1.2rem]"
                         />
                     ) : (
@@ -164,9 +166,13 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
                     )}
                 </div>
                 <button
+                    ref={addBtnRef}
                     onClick={(e) => {
-                        e.stopPropagation(); // Prevent triggering Link
-                        if (!isOutOfStock) addToCart(product);
+                        e.stopPropagation();
+                        if (!isOutOfStock) {
+                            const rect = addBtnRef.current?.getBoundingClientRect();
+                            addToCart(product, rect);
+                        }
                     }}
                     disabled={isOutOfStock}
                     className={`p-3 md:p-4 rounded-xl md:rounded-2xl shadow-lg transition-all group relative overflow-hidden ${isOutOfStock ? 'bg-slate-100 dark:bg-slate-700 text-slate-300 dark:text-slate-500 cursor-not-allowed shadow-none' : 'premium-button shadow-primary/20'}`}

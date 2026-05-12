@@ -17,8 +17,13 @@ export default function ProductDetailsClient({ id }: { id: string }) {
     const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
     const carouselRef = useRef<HTMLDivElement>(null);
+    // Swipe state
+    const swipeStartX = useRef<number>(0);
+    const swipeDelta = useRef<number>(0);
+    const isSwiping = useRef(false);
     const { addToCart } = useCart();
     const router = useRouter();
+    const currentIndex = product?.images?.findIndex(img => img.url === selectedImage) ?? 0;
 
     useEffect(() => {
         async function fetchProduct() {
@@ -116,38 +121,50 @@ export default function ProductDetailsClient({ id }: { id: string }) {
         return <p className="text-sm md:text-base text-slate-600 leading-relaxed font-medium">{desc}</p>;
     };
 
-    // Handle manual scroll to sync active thumbnail
-    const handleScroll = () => {
-        if (!carouselRef.current || !product || !product.images) return;
-        const scrollPosition = carouselRef.current.scrollLeft;
-        const index = Math.round(scrollPosition / carouselRef.current.clientWidth);
-        if (product.images[index] && product.images[index].url !== selectedImage) {
-            setSelectedImage(product.images[index].url);
+    // Pointer-controlled swipe: moves exactly ONE image at a time
+    const handlePointerDown = (e: React.PointerEvent) => {
+        swipeStartX.current = e.clientX;
+        swipeDelta.current = 0;
+        isSwiping.current = true;
+        carouselRef.current?.setPointerCapture(e.pointerId);
+    };
+
+    const handlePointerMove = (e: React.PointerEvent) => {
+        if (!isSwiping.current) return;
+        swipeDelta.current = e.clientX - swipeStartX.current;
+    };
+
+    const handlePointerUp = () => {
+        if (!isSwiping.current || !product?.images) return;
+        isSwiping.current = false;
+        const THRESHOLD = 45;
+        const images = product.images;
+        const idx = images.findIndex(img => img.url === selectedImage);
+        if (swipeDelta.current < -THRESHOLD && idx < images.length - 1) {
+            // Swipe left → next
+            scrollToIndex(idx + 1);
+        } else if (swipeDelta.current > THRESHOLD && idx > 0) {
+            // Swipe right → prev
+            scrollToIndex(idx - 1);
         }
+        // If below threshold, stays on current image automatically
     };
 
     const scrollToIndex = (index: number) => {
-        if (!carouselRef.current) return;
-        carouselRef.current.scrollTo({
-            left: index * carouselRef.current.clientWidth,
-            behavior: "smooth"
-        });
+        if (!product?.images) return;
+        setSelectedImage(product.images[index].url);
     };
 
     const scrollNext = () => {
-        if (!product || !product.images) return;
-        const currentIndex = product.images.findIndex(img => img.url === selectedImage);
-        if (currentIndex < product.images.length - 1) {
-            scrollToIndex(currentIndex + 1);
-        }
+        if (!product?.images) return;
+        const idx = product.images.findIndex(img => img.url === selectedImage);
+        if (idx < product.images.length - 1) scrollToIndex(idx + 1);
     };
 
     const scrollPrev = () => {
-        if (!product || !product.images) return;
-        const currentIndex = product.images.findIndex(img => img.url === selectedImage);
-        if (currentIndex > 0) {
-            scrollToIndex(currentIndex - 1);
-        }
+        if (!product?.images) return;
+        const idx = product.images.findIndex(img => img.url === selectedImage);
+        if (idx > 0) scrollToIndex(idx - 1);
     };
 
     return (
@@ -179,22 +196,31 @@ export default function ProductDetailsClient({ id }: { id: string }) {
                         {/* Left Column: Gallery (7 cols) */}
                         <div className="lg:col-span-7 space-y-4">
                             <div className="relative aspect-square md:aspect-[4/3] lg:aspect-square bg-white rounded-xl md:rounded-2xl shadow-md shadow-slate-200/50 overflow-hidden border border-slate-100 group">
-                                <div
-                                    ref={carouselRef}
-                                    onScroll={handleScroll}
-                                    className="relative w-full h-full overflow-x-auto flex snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-                                >
-                                    {product.images?.map((img, idx) => (
-                                        <div key={img.id || idx} className="w-full h-full flex-shrink-0 snap-center flex items-center justify-center">
-                                            <img
-                                                src={img.url}
-                                                alt={product.name}
-                                                className="max-w-full max-h-full object-contain p-2 md:p-3 pointer-events-none select-none transition-transform duration-500 group-hover:scale-105"
-                                                draggable="false"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
+                            <div
+                                ref={carouselRef}
+                                className="relative w-full h-full overflow-hidden select-none touch-pan-y"
+                                onPointerDown={handlePointerDown}
+                                onPointerMove={handlePointerMove}
+                                onPointerUp={handlePointerUp}
+                                onPointerCancel={handlePointerUp}
+                            >
+                                {/* All images stacked, only selectedImage visible via opacity transition */}
+                                {product.images?.map((img, idx) => (
+                                    <div
+                                        key={img.id || idx}
+                                        className="absolute inset-0 flex items-center justify-center transition-opacity duration-300"
+                                        style={{ opacity: img.url === selectedImage ? 1 : 0, pointerEvents: img.url === selectedImage ? 'auto' : 'none' }}
+                                    >
+                                        <img
+                                            src={img.url}
+                                            alt={product.name}
+                                            className="max-w-full max-h-full object-contain p-2 md:p-3 pointer-events-none select-none transition-transform duration-500 group-hover:scale-105"
+                                            draggable="false"
+                                            loading={idx === 0 ? 'eager' : 'lazy'}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
 
                                 {/* Desktop Navigation Arrows */}
                                 {product.images && product.images.length > 1 && (

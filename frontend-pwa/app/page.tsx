@@ -17,10 +17,9 @@ export default function Home() {
     async function fetchData() {
       try {
         const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5140/api/v1";
-        const prodRes = await fetch(`${API_URL}/products`);
-        if (!prodRes.ok) {
-          throw new Error("Failed to fetch products");
-        }
+        // Fetch only 6 products for homepage performance
+        const prodRes = await fetch(`${API_URL}/products?pageSize=6`);
+        if (!prodRes.ok) throw new Error("Failed to fetch products");
         const prodData = await prodRes.json();
         setProducts(prodData.items || []);
       } catch (error) {
@@ -31,22 +30,21 @@ export default function Home() {
     }
     fetchData();
 
-    // Restaurar posición del scroll
     const savedScrollPos = sessionStorage.getItem("home_scroll_pos");
-    if (savedScrollPos && !loading) {
+    if (savedScrollPos) {
       setTimeout(() => {
         window.scrollTo(0, parseInt(savedScrollPos));
         sessionStorage.removeItem("home_scroll_pos");
       }, 100);
     }
-  }, [loading]);
+  }, []);
 
   // Guardar posición antes de salir
   const handleProductClick = () => {
     sessionStorage.setItem("home_scroll_pos", window.scrollY.toString());
   };
 
-  const featuredProducts = products.slice(0, 8);
+  const featuredProducts = products.slice(0, 6);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -80,8 +78,8 @@ export default function Home() {
         </section>
 
         {/* Product Grid Section */}
-        <section id="products" className="py-12 md:py-24 bg-slate-50/50">
-          <div className="max-w-7xl mx-auto px-6">
+        <section id="products" className="py-6 md:py-12 bg-slate-50/50">
+          <div className="max-w-7xl mx-auto px-2 md:px-6">
             <div className="flex flex-col gap-6 mb-16">
               <div className="space-y-4">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary rounded-full">
@@ -98,7 +96,7 @@ export default function Home() {
             </div>
 
             {loading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 md:gap-3">
                 {[...Array(4)].map((_, i) => (
                   <div key={i} className="glass-card rounded-[2rem] p-3 h-[300px] md:h-[450px] animate-pulse">
                     <div className="aspect-[4/5] bg-slate-200 rounded-[1.8rem] mb-4"></div>
@@ -109,7 +107,7 @@ export default function Home() {
               </div>
             ) : (
               featuredProducts.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 md:gap-3">
                   {featuredProducts.map((product: Product) => (
                     <ProductCard
                       key={product.id}

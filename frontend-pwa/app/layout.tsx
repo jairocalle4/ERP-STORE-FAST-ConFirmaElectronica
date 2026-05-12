@@ -4,6 +4,8 @@ import { CartProvider } from "@/context/CartContext";
 import { CompanyProvider } from "@/context/CompanyContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import CartDrawer from "@/components/CartDrawer";
+import FlyToCart from "@/components/FlyToCart";
+import SplashScreen from "@/components/SplashScreen";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -75,6 +77,8 @@ export default function RootLayout({
         <CompanyProvider>
           <ThemeProvider>
             <CartProvider>
+              <SplashScreen />
+              <FlyToCart />
               <CartDrawer />
               {children}
             </CartProvider>

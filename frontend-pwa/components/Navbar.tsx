@@ -1,6 +1,7 @@
 "use client";
 
 import { Search, ShoppingCart, Menu, X, Sun, Moon, Monitor } from "lucide-react";
+import { CART_ICON_ID } from "@/components/FlyToCart";
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
@@ -112,13 +113,18 @@ export default function Navbar({ showSearch, searchValue, onSearchChange }: Navb
                                 </span>
                             </button>
                             <button
+                                id={CART_ICON_ID}
                                 onClick={() => setIsCartOpen(true)}
                                 className="relative p-2.5 rounded-xl premium-button shadow-lg shadow-primary/20 group hover:scale-105 active:scale-95 transition-all"
                             >
                                 <ShoppingCart size={20} className="group-hover:scale-110 transition-transform" />
                                 {totalItems > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-foreground text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-primary">
-                                        {totalItems}
+                                    <span
+                                        key={totalItems}
+                                        className="absolute -top-2 -right-2 min-w-[20px] h-5 bg-rose-500 text-white text-[10px] font-black flex items-center justify-center rounded-full border-2 border-white dark:border-slate-900 px-1 z-10"
+                                        style={{ animation: 'cartBump 0.4s cubic-bezier(0.34,1.56,0.64,1)' }}
+                                    >
+                                        {totalItems > 99 ? '99+' : totalItems}
                                     </span>
                                 )}
                             </button>
