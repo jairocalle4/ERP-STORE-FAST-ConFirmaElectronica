@@ -1,11 +1,12 @@
 "use client";
 
-import { Search, ShoppingCart, Menu, X } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, Sun, Moon, Monitor } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import { useCompany } from "@/context/CompanyContext";
+import { useTheme, type Theme } from "@/context/ThemeContext";
 
 interface NavbarProps {
     showSearch?: boolean;
@@ -13,12 +14,17 @@ interface NavbarProps {
     onSearchChange?: (val: string) => void;
 }
 
+const THEME_ICONS: Record<Theme, React.ElementType> = { light: Sun, dark: Moon, system: Monitor };
+const THEME_LABELS: Record<Theme, string> = { light: 'Claro', dark: 'Oscuro', system: 'Sistema' };
+
 export default function Navbar({ showSearch, searchValue, onSearchChange }: NavbarProps) {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { totalItems, setIsCartOpen } = useCart();
     const { company } = useCompany();
+    const { theme, cycleTheme } = useTheme();
+    const ThemeIcon = THEME_ICONS[theme];
 
     // Split name into two parts for styling: first half normal, second half gradient
     const name = company.name || "FASTSTORE";
@@ -93,6 +99,18 @@ export default function Navbar({ showSearch, searchValue, onSearchChange }: Navb
                         <div className="flex items-center gap-3">
 
                             {/* User removed as per request */}
+                        {/* Theme Toggle */}
+                            <button
+                                onClick={cycleTheme}
+                                title={`Tema: ${THEME_LABELS[theme]}`}
+                                aria-label={`Cambiar tema — ${THEME_LABELS[theme]}`}
+                                className="relative group p-2.5 rounded-xl bg-white/70 dark:bg-slate-800/70 border border-slate-200/60 dark:border-slate-700/60 text-slate-500 dark:text-slate-300 hover:text-primary dark:hover:text-primary/80 hover:border-primary/30 transition-all backdrop-blur-sm shadow-sm"
+                            >
+                                <ThemeIcon size={18} className="transition-all duration-300" />
+                                <span className="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-slate-700 text-white text-[10px] font-bold px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                                    {THEME_LABELS[theme]}
+                                </span>
+                            </button>
                             <button
                                 onClick={() => setIsCartOpen(true)}
                                 className="relative p-2.5 rounded-xl premium-button shadow-lg shadow-primary/20 group hover:scale-105 active:scale-95 transition-all"
@@ -118,7 +136,7 @@ export default function Navbar({ showSearch, searchValue, onSearchChange }: Navb
             {/* Mobile Menu Overlay */}
             {
                 isMenuOpen && (
-                    <div className="fixed inset-0 z-50 bg-white/95 backdrop-blur-xl animate-fade-in md:hidden">
+                <div className="fixed inset-0 z-50 bg-white/95 dark:bg-slate-950/97 backdrop-blur-xl animate-fade-in md:hidden">
                         <div className="flex flex-col items-center justify-center h-full space-y-8 px-8">
                             {[
                                 { name: "Colecciones", href: "/catalog" },

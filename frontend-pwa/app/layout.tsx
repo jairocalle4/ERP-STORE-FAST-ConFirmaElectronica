@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { CartProvider } from "@/context/CartContext";
 import { CompanyProvider } from "@/context/CompanyContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import CartDrawer from "@/components/CartDrawer";
 import "./globals.css";
 
@@ -72,10 +73,12 @@ export default function RootLayout({
       >
         <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-100 via-slate-50 to-white opacity-40"></div>
         <CompanyProvider>
-          <CartProvider>
-            <CartDrawer />
-            {children}
-          </CartProvider>
+          <ThemeProvider>
+            <CartProvider>
+              <CartDrawer />
+              {children}
+            </CartProvider>
+          </ThemeProvider>
         </CompanyProvider>
       </body>
     </html>

@@ -2,8 +2,11 @@
 
 @import "tailwindcss";
 
+/* ── Tailwind v4: habilitar dark: prefix con estrategia de clase ── */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  /* Light Mode - Premium Neutral Palette with Vibrant Accents */
+  /* Light Mode */
   --background: 210 40% 98%;
   --foreground: 224 71% 4%;
 
@@ -23,6 +26,29 @@
   --glass-border: rgba(255, 255, 255, 0.2);
 
   --radius: 1rem;
+}
+
+/* Dark Mode Variables */
+.dark {
+  color-scheme: dark;
+
+  --background: 222 47% 5%;
+  --foreground: 210 40% 96%;
+
+  --primary: 263 70% 60%;
+  --primary-foreground: 210 40% 98%;
+
+  --secondary: 215 25% 70%;
+  --secondary-foreground: 222 47% 5%;
+
+  --accent: 263 70% 60%;
+  --accent-foreground: 210 40% 96%;
+
+  --muted: 215 25% 15%;
+  --muted-foreground: 215 20% 65%;
+
+  --glass: rgba(15, 23, 42, 0.80);
+  --glass-border: rgba(255, 255, 255, 0.07);
 }
 
 @theme {
@@ -84,6 +110,101 @@
   .premium-button:hover::before {
     @apply opacity-100;
   }
+}
+
+/* ── Dark Mode: fondo con gradiente premium oscuro ── */
+.dark body {
+  background-image:
+    radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.12) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.08) 0px, transparent 50%);
+}
+
+/* ── Dark Mode: Backgrounds comunes ── */
+.dark .bg-white {
+  background-color: hsl(215 25% 12%) !important;
+}
+
+.dark .bg-white\/95 {
+  background-color: rgba(15, 23, 42, 0.97) !important;
+}
+
+.dark .bg-slate-100 {
+  background-color: hsl(215 25% 15%) !important;
+}
+
+.dark .bg-slate-100\/80 {
+  background-color: rgba(20, 30, 55, 0.80) !important;
+}
+
+.dark .bg-slate-50 {
+  background-color: hsl(222 47% 8%) !important;
+}
+
+.dark .bg-gray-50 {
+  background-color: hsl(222 47% 8%) !important;
+}
+
+/* ── Dark Mode: Textos ── */
+.dark .text-slate-800 {
+  color: #f1f5f9 !important;
+}
+
+.dark .text-slate-700 {
+  color: #e2e8f0 !important;
+}
+
+.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+.dark .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+.dark .text-gray-800 {
+  color: #f1f5f9 !important;
+}
+
+.dark .text-gray-600 {
+  color: #cbd5e1 !important;
+}
+
+/* ── Dark Mode: Bordes ── */
+.dark .border-slate-200 {
+  border-color: #334155 !important;
+}
+
+.dark .border-slate-100 {
+  border-color: #1e293b !important;
+}
+
+.dark .border-gray-200 {
+  border-color: #334155 !important;
+}
+
+/* ── Dark Mode: Inputs ── */
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="search"],
+.dark input[type="number"],
+.dark textarea,
+.dark select {
+  background-color: hsl(215 25% 15%);
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #475569;
+}
+
+/* ── Dark Mode: glass-card override ── */
+.dark .glass-card {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.30);
 }
 
 @keyframes fade-in {

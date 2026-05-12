@@ -1,10 +1,35 @@
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, Layers, LogOut, User, Briefcase, FileText, ShoppingCart, X, Settings, DollarSign, BarChart2, Plus, Truck, Download, Bell, Info, AlertTriangle, Trash2, ChevronRight, Menu, Shield } from 'lucide-react';
+import { LayoutDashboard, Package, Layers, LogOut, User, Briefcase, FileText, ShoppingCart, X, Settings, DollarSign, BarChart2, Plus, Truck, Download, Bell, Info, AlertTriangle, Trash2, ChevronRight, Menu, Shield, Sun, Moon, Monitor } from 'lucide-react';
+import { useThemeStore, type Theme } from '../../store/useThemeStore';
 import { notificationService, type Notification } from '../../services/notification.service';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Toast } from '../common/Toast';
 import { companyService } from '../../services/company.service';
+
+const THEME_CONFIG: Record<Theme, { icon: React.ElementType; label: string; next: Theme }> = {
+    light: { icon: Sun, label: 'Claro', next: 'dark' },
+    dark:  { icon: Moon, label: 'Oscuro', next: 'system' },
+    system: { icon: Monitor, label: 'Sistema', next: 'light' },
+};
+
+function ThemeToggleButton() {
+    const { theme, cycleTheme } = useThemeStore();
+    const { icon: Icon, label } = THEME_CONFIG[theme];
+    return (
+        <button
+            onClick={cycleTheme}
+            title={`Tema: ${label} (click para cambiar)`}
+            aria-label={`Cambiar tema — actual: ${label}`}
+            className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 dark:hover:border-indigo-500/50 transition-all relative group shadow-sm"
+        >
+            <Icon size={18} className="transition-all duration-300" />
+            <span className="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-slate-700 text-white text-[10px] font-bold px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                {label}
+            </span>
+        </button>
+    );
+}
 
 export default function MainLayout() {
     const { logout, user } = useAuthStore();
@@ -173,7 +198,7 @@ export default function MainLayout() {
     };
 
     return (
-        <div className="flex h-screen overflow-hidden text-slate-800 bg-slate-50/0 font-sans selection:bg-indigo-500/30">
+        <div className="flex h-screen overflow-hidden text-slate-800 dark:text-slate-100 bg-slate-50/0 font-sans selection:bg-indigo-500/30">
             {/* Desktop Floating Sidebar */}
             <aside className={`hidden md:flex flex-col fixed left-4 top-4 bottom-4 glass-float rounded-3xl z-30 transition-all duration-500 border border-white/10 shadow-2xl ${isCollapsed ? 'w-20' : 'w-72'}`}>
                 <SidebarContent />
@@ -202,7 +227,7 @@ export default function MainLayout() {
             <div className={`flex-1 flex flex-col h-full overflow-hidden relative transition-all duration-500 ${isCollapsed ? 'md:ml-28' : 'md:ml-80'}`}>
 
                 {/* Desktop Header / Mobile Header */}
-                <header className="sticky top-0 z-20 px-6 py-4 flex justify-between items-center md:bg-transparent md:backdrop-blur-none bg-white/80 backdrop-blur-md md:pt-6">
+                <header className="sticky top-0 z-20 px-6 py-4 flex justify-between items-center md:bg-transparent md:backdrop-blur-none bg-white/80 dark:bg-slate-950/80 backdrop-blur-md md:pt-6">
                     <div className="md:hidden flex items-center gap-3">
                         <button
                             onClick={() => setIsMobileMenuOpen(true)}
@@ -233,7 +258,8 @@ export default function MainLayout() {
                     </div>
 
                     <div className="flex items-center gap-2 md:gap-4">
-                        <span className="text-sm font-medium text-slate-500 hidden lg:inline-block">{new Date().toLocaleDateString()}</span>
+                        <span className="text-sm font-medium text-slate-500 dark:text-slate-400 hidden lg:inline-block">{new Date().toLocaleDateString()}</span>
+                        <ThemeToggleButton />
 
                         {/* Notifications Dropdown */}
                         <div className="relative">
@@ -256,9 +282,9 @@ export default function MainLayout() {
                             {isNotifOpen && (
                                 <>
                                     <div className="fixed inset-0 z-40" onClick={() => setIsNotifOpen(false)} />
-                                    <div className="absolute right-0 mt-3 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 animate-scale-in origin-top-right z-50 max-h-[500px] overflow-hidden flex flex-col">
-                                        <div className="p-4 border-b border-slate-50 flex justify-between items-center bg-slate-50/30 rounded-t-xl shrink-0">
-                                            <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                                    <div className="absolute right-0 mt-3 w-80 md:w-96 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 p-2 animate-scale-in origin-top-right z-50 max-h-[500px] overflow-hidden flex flex-col">
+                                        <div className="p-4 border-b border-slate-50 dark:border-slate-700 flex justify-between items-center bg-slate-50/30 dark:bg-slate-700/30 rounded-t-xl shrink-0">
+                                            <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm">
                                                 <Bell size={16} className="text-indigo-600" /> Notificaciones
                                             </h3>
                                             {notifications.length > 0 && (
@@ -355,8 +381,8 @@ export default function MainLayout() {
 
                             {/* Dropdown Content */}
                             {isUserMenuOpen && (
-                                <div className="absolute right-0 top-full mt-3 w-72 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 animate-scale-in origin-top-right z-50">
-                                    <div className="p-4 border-b border-slate-100 flex items-center gap-4">
+                                <div className="absolute right-0 top-full mt-3 w-72 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 p-2 animate-scale-in origin-top-right z-50">
+                                    <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex items-center gap-4">
                                         <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center text-white font-bold text-lg shadow-md">
                                             {user?.username?.substring(0, 2).toUpperCase() || 'AD'}
                                         </div>
@@ -387,7 +413,7 @@ export default function MainLayout() {
                                         </NavLink>
                                     </div>
 
-                                    <div className="border-t border-slate-100 py-2">
+                                    <div className="border-t border-slate-100 dark:border-slate-700 py-2">
                                         <button
                                             onClick={() => {
                                                 setIsUserMenuOpen(false);
@@ -406,7 +432,7 @@ export default function MainLayout() {
                 </header>
 
                 {/* Scrollable Content */}
-                <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth custom-scrollbar">
+                <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth custom-scrollbar dark:text-slate-100">
                     <Outlet />
                 </main>
             </div>

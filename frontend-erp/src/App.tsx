@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useThemeStore } from './store/useThemeStore';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ProductListPage from './pages/ProductListPage';
@@ -99,6 +100,17 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 }
 
 function App() {
+  const { applyTheme } = useThemeStore();
+
+  // Aplicar tema al montar y escuchar cambios del sistema
+  useEffect(() => {
+    applyTheme();
+    const mql = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => applyTheme();
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+
   return (
     <ErrorBoundary>
       <BrowserRouter>
