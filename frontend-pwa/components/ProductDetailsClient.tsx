@@ -15,6 +15,7 @@ export default function ProductDetailsClient({ id }: { id: string }) {
     const [selectedImage, setSelectedImage] = useState<string>("");
     const [isVideoMode, setIsVideoMode] = useState(false);
     const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+    const [descExpanded, setDescExpanded] = useState(false);
 
     const carouselRef = useRef<HTMLDivElement>(null);
     // Swipe state
@@ -171,7 +172,7 @@ export default function ProductDetailsClient({ id }: { id: string }) {
         <div className="min-h-screen flex flex-col bg-slate-50">
             <Navbar />
 
-            <main className="flex-grow pt-16 md:pt-20 pb-24 px-4 sm:px-6">
+            <main className="flex-grow pt-16 md:pt-20 pb-28 md:pb-24 px-4 sm:px-6">
                 <div className="max-w-7xl mx-auto">
                     {/* Navigation Header */}
                     <div className="flex items-center gap-4 mb-3">
@@ -333,25 +334,25 @@ export default function ProductDetailsClient({ id }: { id: string }) {
 
                         {/* Right Column: Info & Buy (5 cols) */}
                         <div className="lg:col-span-5 flex flex-col h-full">
-                            <div className="sticky top-32 space-y-8 bg-white/50 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white shadow-xl shadow-slate-200/50">
+                            <div className="sticky top-32 space-y-6 bg-white/50 dark:bg-slate-900/60 backdrop-blur-xl p-6 md:p-8 rounded-[2.5rem] border border-white dark:border-slate-700/50 shadow-xl shadow-slate-200/50">
                                 {/* Header Info */}
-                                <div className="space-y-4">
+                                <div className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary bg-primary/5 px-3 py-1 rounded-full border border-primary/10">
                                             {product.category?.name || 'General'}
                                         </span>
                                         <div className="flex items-center gap-1">
                                             <Star size={14} className="text-amber-400 fill-amber-400" />
-                                            <span className="text-xs font-bold text-slate-700">4.9 (120)</span>
+                                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">4.9 (120)</span>
                                         </div>
                                     </div>
 
-                                    <h1 className="text-3xl md:text-4xl lg:text-5xl font-outfit font-black text-slate-900 leading-[0.95] tracking-tight uppercase">
+                                    <h1 className="text-2xl md:text-4xl lg:text-5xl font-outfit font-black text-slate-900 dark:text-slate-100 leading-tight tracking-tight uppercase">
                                         {product.name}
                                     </h1>
 
                                     <div className="flex items-baseline gap-3">
-                                        <span className="text-4xl md:text-5xl font-outfit font-black text-primary tracking-tighter">
+                                        <span className="text-3xl md:text-5xl font-outfit font-black text-primary tracking-tighter">
                                             ${product.price.toFixed(2)}
                                         </span>
                                         {oldPrice > 0 && (
@@ -362,53 +363,18 @@ export default function ProductDetailsClient({ id }: { id: string }) {
                                     </div>
                                 </div>
 
-                                <div className="w-full h-px bg-slate-100"></div>
-
-                                {/* Description */}
-                                <div className="space-y-3">
-                                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Sobre este producto</h3>
-                                    <div>
-                                        {renderDescription(product.description)}
-                                    </div>
-                                </div>
-
-                                {/* Benefits Matrix */}
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-indigo-50/50 p-4 rounded-2xl flex flex-col gap-2 border border-indigo-100/50">
-                                        <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center">
-                                            <Truck size={16} />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] uppercase font-black tracking-widest text-indigo-400">Envío</p>
-                                            <p className="text-xs font-bold text-indigo-900">Nacional Rápido</p>
-                                        </div>
-                                    </div>
-                                    <div className="bg-emerald-50/50 p-4 rounded-2xl flex flex-col gap-2 border border-emerald-100/50">
-                                        <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                                            <ShieldCheck size={16} />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] uppercase font-black tracking-widest text-emerald-400">Garantía</p>
-                                            <p className="text-xs font-bold text-emerald-900">30 Días de Retorno</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Actions */}
-                                <div className="space-y-4 pt-4">
+                                {/* Add to Cart — DESKTOP ONLY (mobile uses fixed bottom bar) */}
+                                <div className="hidden md:block">
                                     <button
                                         onClick={() => { if (!isOutOfStock) addToCart(product); }}
                                         disabled={isOutOfStock}
                                         className={`w-full py-5 rounded-2xl flex items-center justify-center gap-3 transition-all duration-300 font-black uppercase tracking-widest text-lg ${isOutOfStock
-                                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                                            ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 cursor-not-allowed shadow-none'
                                             : 'premium-button shadow-xl shadow-primary/20 group hover:-translate-y-1'
                                             }`}
                                     >
                                         {isOutOfStock ? (
-                                            <>
-                                                <ShoppingCart size={24} />
-                                                <span>Producto Agotado</span>
-                                            </>
+                                            <><ShoppingCart size={24} /><span>Producto Agotado</span></>
                                         ) : (
                                             <>
                                                 <div className="relative">
@@ -419,13 +385,48 @@ export default function ProductDetailsClient({ id }: { id: string }) {
                                             </>
                                         )}
                                     </button>
-
-                                    <p className="text-center text-[10px] text-slate-400 font-medium">
-                                        {isOutOfStock
-                                            ? 'Este producto no está disponible en este momento.'
-                                            : 'Pago seguro con encriptación SSL de 256-bits.'
-                                        }
+                                    <p className="text-center text-[10px] text-slate-400 font-medium mt-3">
+                                        {isOutOfStock ? 'No disponible.' : 'Pago seguro con encriptación SSL.'}
                                     </p>
+                                </div>
+
+                                <div className="w-full h-px bg-slate-100 dark:bg-slate-700"></div>
+
+                                {/* Benefits Matrix */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-indigo-50/50 dark:bg-indigo-900/20 p-3 rounded-2xl flex items-center gap-3 border border-indigo-100/50 dark:border-indigo-800/30">
+                                        <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                                            <Truck size={16} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] uppercase font-black tracking-widest text-indigo-400">Envío</p>
+                                            <p className="text-xs font-bold text-indigo-900 dark:text-indigo-300">Nacional Rápido</p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-emerald-50/50 dark:bg-emerald-900/20 p-3 rounded-2xl flex items-center gap-3 border border-emerald-100/50 dark:border-emerald-800/30">
+                                        <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                                            <ShieldCheck size={16} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] uppercase font-black tracking-widest text-emerald-400">Garantía</p>
+                                            <p className="text-xs font-bold text-emerald-900 dark:text-emerald-300">30 Días de Retorno</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Description — collapsible on mobile */}
+                                <div className="space-y-2">
+                                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Sobre este producto</h3>
+                                    <div className={`overflow-hidden transition-all duration-300 ${descExpanded ? '' : 'max-h-24 md:max-h-none'}`}>
+                                        {renderDescription(product.description)}
+                                    </div>
+                                    {/* Show toggle only on mobile when content might overflow */}
+                                    <button
+                                        onClick={() => setDescExpanded(v => !v)}
+                                        className="md:hidden text-xs font-bold text-primary flex items-center gap-1 mt-1"
+                                    >
+                                        {descExpanded ? '▲ Ver menos' : '▼ Ver más'}
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -434,6 +435,25 @@ export default function ProductDetailsClient({ id }: { id: string }) {
             </main>
 
             <Footer />
+
+            {/* ── FIXED BOTTOM BAR — MOBILE ONLY ── */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-100 dark:border-slate-700/50 px-4 py-3 flex items-center gap-3 shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
+                <div className="flex flex-col">
+                    <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">Precio</span>
+                    <span className="text-xl font-outfit font-black text-primary">${product.price.toFixed(2)}</span>
+                </div>
+                <button
+                    onClick={() => { if (!isOutOfStock) addToCart(product); }}
+                    disabled={isOutOfStock}
+                    className={`flex-1 py-4 rounded-2xl flex items-center justify-center gap-3 font-black uppercase tracking-widest text-sm transition-all active:scale-95 ${isOutOfStock
+                        ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
+                        : 'premium-button shadow-lg shadow-primary/20'
+                    }`}
+                >
+                    <ShoppingCart size={20} />
+                    <span>{isOutOfStock ? 'Agotado' : 'Añadir al Carrito'}</span>
+                </button>
+            </div>
 
             {/* Video Fullscreen Modal Overlay (Temu Style) */}
             {

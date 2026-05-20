@@ -112,22 +112,25 @@ export default function Navbar({ showSearch, searchValue, onSearchChange }: Navb
                                     {THEME_LABELS[theme]}
                                 </span>
                             </button>
-                            <button
-                                id={CART_ICON_ID}
-                                onClick={() => setIsCartOpen(true)}
-                                className="relative p-2.5 rounded-xl premium-button shadow-lg shadow-primary/20 group hover:scale-105 active:scale-95 transition-all"
-                            >
-                                <ShoppingCart size={20} className="group-hover:scale-110 transition-transform" />
+                            {/* Cart button with badge on wrapper to avoid clipping */}
+                            <div className="relative">
+                                <button
+                                    id={CART_ICON_ID}
+                                    onClick={() => setIsCartOpen(true)}
+                                    className="relative p-2.5 rounded-xl premium-button shadow-lg shadow-primary/20 group hover:scale-105 active:scale-95 transition-all"
+                                >
+                                    <ShoppingCart size={20} className="group-hover:scale-110 transition-transform" />
+                                </button>
                                 {totalItems > 0 && (
                                     <span
                                         key={totalItems}
-                                        className="absolute -top-2 -right-2 min-w-[20px] h-5 bg-rose-500 text-white text-[10px] font-black flex items-center justify-center rounded-full border-2 border-white dark:border-slate-900 px-1 z-10"
-                                        style={{ animation: 'cartBump 0.4s cubic-bezier(0.34,1.56,0.64,1)' }}
+                                        className="absolute -top-2 -right-2 min-w-[18px] h-[18px] bg-rose-500 text-white text-[10px] font-black flex items-center justify-center rounded-full border-2 border-white dark:border-slate-900 px-1 pointer-events-none"
+                                        style={{ animation: 'cartBump 0.4s cubic-bezier(0.34,1.56,0.64,1)', zIndex: 50 }}
                                     >
                                         {totalItems > 99 ? '99+' : totalItems}
                                     </span>
                                 )}
-                            </button>
+                            </div>
                             <button
                                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                                 className="md:hidden p-2.5 rounded-xl hover:bg-muted text-foreground transition-all active:scale-95"
