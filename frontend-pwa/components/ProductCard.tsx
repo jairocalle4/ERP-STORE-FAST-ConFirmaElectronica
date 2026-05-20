@@ -71,7 +71,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
                 onClick={onClick}
             >
                 {/* Image Container */}
-                <div className={`relative aspect-[4/5] bg-white dark:bg-slate-800 rounded-xl md:rounded-[1.8rem] mb-3 md:mb-4 flex items-center justify-center overflow-hidden border border-slate-100 dark:border-slate-700 p-4 shadow-inner ${isOutOfStock ? 'grayscale' : ''}`}>
+                <div className={`relative aspect-square bg-white dark:bg-slate-800 rounded-xl md:rounded-[1.8rem] mb-3 md:mb-4 flex items-center justify-center overflow-hidden border border-slate-100 dark:border-slate-700 p-2 shadow-inner ${isOutOfStock ? 'grayscale' : ''}`}>
                     {product.videoUrl && isHovered ? (
                         <div className="relative w-full h-full">
                             <video
@@ -113,22 +113,21 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
                     )}
 
                     {/* Badges */}
-                    <div className="absolute top-4 left-4 flex gap-2 z-20">
+                    <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-20 pr-10">
                         {product.stock <= 5 && product.stock > 0 && (
-                            <span className="bg-rose-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg animate-pulse">ÚLTIMOS {product.stock}</span>
+                            <span className="bg-rose-500 text-white text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-full shadow-lg animate-pulse whitespace-nowrap">ÚLTIMOS {product.stock}</span>
                         )}
                         {(product.discountPercentage || 0) > 0 && !isOutOfStock && (
-                            <span className="bg-amber-400 text-amber-950 text-[10px] font-bold px-3 py-1 rounded-full shadow-lg">-{product.discountPercentage}%</span>
+                            <span className="bg-amber-400 text-amber-950 text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-full shadow-lg whitespace-nowrap">-{product.discountPercentage}%</span>
                         )}
                     </div>
 
-                    {/* Floating Actions */}
-                    <div className={`absolute bottom-4 right-4 flex justify-end items-center transition-all duration-500 z-20 ${isHovered && !isOutOfStock ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+                    <div className={`absolute bottom-3 right-3 flex justify-end items-center transition-all duration-500 z-20 ${isHovered && !isOutOfStock ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
                         <button
                             onClick={toggleWishlist}
-                            className={`w-10 h-10 rounded-xl bg-white dark:bg-slate-700 flex items-center justify-center shadow-lg transition-all transform active:scale-90 ${isWishlisted ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'}`}
+                            className={`w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white dark:bg-slate-700 flex items-center justify-center shadow-lg transition-all transform active:scale-90 ${isWishlisted ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'}`}
                         >
-                            <Heart size={20} fill={isWishlisted ? "currentColor" : "none"} />
+                            <Heart size={18} fill={isWishlisted ? "currentColor" : "none"} />
                         </button>
                     </div>
 
@@ -139,7 +138,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
                                 e.stopPropagation();
                                 setIsHovered(true);
                             }}
-                            className="absolute top-4 right-4 bg-white/80 backdrop-blur-md text-foreground p-2 rounded-full shadow-lg z-30 transition-transform active:scale-90"
+                            className="absolute top-3 right-3 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md text-foreground p-2 rounded-full shadow-lg z-30 transition-transform active:scale-90 border border-slate-100 dark:border-slate-700"
                         >
                             <Play size={12} fill="currentColor" />
                         </button>
