@@ -64,5 +64,15 @@ export const cashRegisterService = {
     getHistory: async () => {
         const response = await api.get<CashRegisterSession[]>('/cash-register/history');
         return response.data;
+    },
+    
+    getSessionDetails: async (id: number) => {
+        const response = await api.get<{
+            session: CashRegisterSession;
+            manualTransactions: CashTransaction[];
+            sales: Array<{ id: number; noteNumber: string; total: number; date: string; observation: string }>;
+            expenses: Array<{ id: number; description: string; amount: number; date: string; notes?: string }>;
+        }>(`/cash-register/session/${id}/details`);
+        return response.data;
     }
 };

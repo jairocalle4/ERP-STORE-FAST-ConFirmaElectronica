@@ -31,6 +31,7 @@ public class CreateExpenseDto
     public DateTime Date { get; set; } = DateTime.Now;
 
     public string PaymentMethod { get; set; } = "Efectivo";
+    public bool DeductFromCashRegister { get; set; } = false;
 
     public string? Notes { get; set; }
 }

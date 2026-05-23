@@ -23,6 +23,34 @@ const CashRegisterPage: React.FC = () => {
     const [transactionDesc, setTransactionDesc] = useState('');
 
     const [history, setHistory] = useState<CashRegisterSession[]>([]);
+    
+    // Denominations Count
+    const [denominationInputs, setDenominationInputs] = useState<{ [key: string]: string }>({});
+
+    // Audit Details Modal State
+    const [showDetailsModal, setShowDetailsModal] = useState(false);
+    const [detailsLoading, setDetailsLoading] = useState(false);
+    const [sessionDetails, setSessionDetails] = useState<{
+        session: CashRegisterSession;
+        manualTransactions: any[];
+        sales: any[];
+        expenses: any[];
+    } | null>(null);
+
+    const handleViewDetails = async (sessionId: number) => {
+        setDetailsLoading(true);
+        setShowDetailsModal(true);
+        try {
+            const data = await cashRegisterService.getSessionDetails(sessionId);
+            setSessionDetails(data);
+        } catch (error) {
+            console.error(error);
+            addNotification('Error al cargar los detalles de auditoría', 'error');
+            setShowDetailsModal(false);
+        } finally {
+            setDetailsLoading(false);
+        }
+    };
 
     const { addNotification } = useNotificationStore();
 
@@ -84,13 +112,19 @@ const CashRegisterPage: React.FC = () => {
     const handleCloseSession = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await cashRegisterService.closeSession(Number(closeAmount), closeNotes);
+            // Serialize denominations count and closeNotes together into the Notes string
+            const notesPayload = JSON.stringify({
+                userNotes: closeNotes,
+                denominations: denominationInputs
+            });
+            await cashRegisterService.closeSession(Number(closeAmount), notesPayload);
             addNotification('Caja cerrada correctamente', 'success');
             setShowCloseModal(false);
             fetchStatus();
             fetchHistory();
             setCloseAmount('');
             setCloseNotes('');
+            setDenominationInputs({});
         } catch (error: any) {
             addNotification(error.response?.data || 'Error al cerrar caja', 'error');
         }
@@ -171,7 +205,7 @@ const CashRegisterPage: React.FC = () => {
                 </div>
 
                 {/* History section for closed state */}
-                <CashHistory history={history} />
+                <CashHistory history={history} onViewDetails={handleViewDetails} />
             </div>
         );
     }
@@ -309,7 +343,7 @@ const CashRegisterPage: React.FC = () => {
             </div>
 
             {/* History Section */}
-            <CashHistory history={history} />
+            <CashHistory history={history} onViewDetails={handleViewDetails} />
 
             {/* Modal de Cierre */}
             {showCloseModal && (
@@ -337,7 +371,10 @@ const CashRegisterPage: React.FC = () => {
                             </div>
 
                             <DenominationCounter
-                                onChange={(total) => setCloseAmount(total.toFixed(2))}
+                                onChange={(total, inputs) => {
+                                    setCloseAmount(total.toFixed(2));
+                                    setDenominationInputs(inputs);
+                                }}
                             />
 
                             <div className="space-y-3">
@@ -472,12 +509,249 @@ const CashRegisterPage: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {/* Modal de Auditoría de Sesión (Detalles) */}
+            {showDetailsModal && (
+                <div className="fixed inset-0 z-[110] bg-slate-900/30 backdrop-blur-md flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.3)] w-full max-w-3xl overflow-hidden animate-scale-in border border-slate-100 max-h-[90vh] flex flex-col">
+                        <div className="p-8 pb-4 flex justify-between items-center shrink-0 border-b border-slate-100">
+                            <div>
+                                <h2 className="text-2xl font-black text-slate-800 tracking-tight">Detalles de Auditoría</h2>
+                                <p className="text-sm font-bold text-slate-400">
+                                    Sesión #{sessionDetails?.session.id} — {sessionDetails?.session.status === 'Open' ? 'En curso' : 'Cerrada'}
+                                </p>
+                            </div>
+                            <button onClick={() => { setShowDetailsModal(false); setSessionDetails(null); }} className="w-10 h-10 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-100 transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="overflow-y-auto custom-scrollbar p-8 space-y-6">
+                            {detailsLoading ? (
+                                <div className="text-center py-12 text-slate-500 font-bold">Cargando detalles de sesión...</div>
+                            ) : sessionDetails ? (
+                                <>
+                                    {/* Resumen Principal */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                            <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Usuario</span>
+                                            <span className="text-sm font-bold text-slate-800">{sessionDetails.session.user?.username || 'Sistema'}</span>
+                                        </div>
+                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                            <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Apertura</span>
+                                            <span className="text-xs font-bold text-slate-800">{new Date(sessionDetails.session.openTime).toLocaleString('es-EC')}</span>
+                                        </div>
+                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                            <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Cierre</span>
+                                            <span className="text-xs font-bold text-slate-800">
+                                                {sessionDetails.session.closeTime ? new Date(sessionDetails.session.closeTime).toLocaleString('es-EC') : 'Activa'}
+                                            </span>
+                                        </div>
+                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                            <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Diferencia</span>
+                                            <span className={`text-xs font-black px-2 py-0.5 rounded-lg ${sessionDetails.session.discrepancy === 0 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                                                ${sessionDetails.session.discrepancy.toFixed(2)}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Valores Financieros */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                                            <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Efectivo Inicial (Base)</span>
+                                            <span className="text-lg font-black text-slate-700">${sessionDetails.session.openAmount.toFixed(2)}</span>
+                                        </div>
+                                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                                            <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Efectivo Esperado</span>
+                                            <span className="text-lg font-black text-indigo-600">${sessionDetails.session.calculatedAmount.toFixed(2)}</span>
+                                        </div>
+                                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                                            <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Efectivo Físico</span>
+                                            <span className="text-lg font-black text-slate-700">
+                                                {sessionDetails.session.status === 'Closed' ? `$${sessionDetails.session.closeAmount.toFixed(2)}` : '---'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Collapse / Acordeón para Desglose de Monedas/Billetes */}
+                                    {(() => {
+                                        let userNotesText = sessionDetails.session.notes;
+                                        let denominations: { [key: string]: string } | null = null;
+                                        try {
+                                            if (sessionDetails.session.notes && (sessionDetails.session.notes.startsWith('{') || sessionDetails.session.notes.includes('"denominations"'))) {
+                                                const parsed = JSON.parse(sessionDetails.session.notes);
+                                                userNotesText = parsed.userNotes;
+                                                denominations = parsed.denominations;
+                                            }
+                                        } catch (e) {
+                                            console.warn("Could not parse denominations notes", e);
+                                        }
+
+                                        return (
+                                            <div className="space-y-4">
+                                                {/* Detalle del Arqueo de Monedas / Billetes (Collapse/Details) */}
+                                                {denominations && Object.keys(denominations).length > 0 && (
+                                                    <details className="group border border-slate-200/80 rounded-2xl overflow-hidden bg-slate-50/50">
+                                                        <summary className="flex justify-between items-center p-4 font-black text-xs text-slate-700 uppercase tracking-widest cursor-pointer select-none hover:bg-slate-50 transition-colors">
+                                                            <div className="flex items-center gap-2">
+                                                                <Coins size={16} className="text-indigo-600" />
+                                                                Ver Conteo de Monedas y Billetes
+                                                            </div>
+                                                            <span className="text-slate-400 group-open:rotate-180 transition-transform duration-200">
+                                                                ▼
+                                                            </span>
+                                                        </summary>
+                                                        <div className="p-6 pt-0 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-4 bg-white">
+                                                            {Object.entries(denominations)
+                                                                .filter(([_, count]) => count && Number(count) > 0)
+                                                                .map(([key, count]) => {
+                                                                    const parts = key.split('_');
+                                                                    const type = parts[0] === 'bill' ? 'Billete' : 'Moneda';
+                                                                    const val = parts[1];
+                                                                    return (
+                                                                        <div key={key} className="p-3 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between">
+                                                                            <div>
+                                                                                <span className="text-[10px] text-slate-400 font-bold block">{type}</span>
+                                                                                <span className="text-sm font-black text-slate-700">${val}</span>
+                                                                            </div>
+                                                                            <span className="text-xs font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg">
+                                                                                x{count}
+                                                                            </span>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                        </div>
+                                                    </details>
+                                                )}
+
+                                                {/* Observaciones / Notas */}
+                                                {userNotesText && (
+                                                    <div className="p-4 bg-amber-50/40 border border-amber-100 rounded-2xl">
+                                                        <span className="block text-[9px] font-black text-amber-500 uppercase tracking-wider mb-1">Observaciones / Notas</span>
+                                                        <p className="text-xs text-amber-800 font-medium whitespace-pre-wrap">{userNotesText}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Detalle de Transacciones Manuales */}
+                                    <div className="space-y-3">
+                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Movimientos Manuales en Caja</h3>
+                                        <div className="bg-slate-50/50 border border-slate-100 rounded-2xl overflow-hidden">
+                                            <table className="w-full text-left border-collapse table-clean">
+                                                <thead>
+                                                    <tr className="bg-slate-900/5">
+                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase">Hora</th>
+                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase">Tipo</th>
+                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase">Descripción</th>
+                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-right">Monto</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {sessionDetails.manualTransactions.length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan={4} className="p-4 text-center text-xs text-slate-400 italic">No hay movimientos manuales en esta sesión.</td>
+                                                        </tr>
+                                                    ) : (
+                                                        sessionDetails.manualTransactions.map((t: any) => (
+                                                            <tr key={t.id}>
+                                                                <td className="px-4 py-3 text-xs text-slate-500">{new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                                                <td className="px-4 py-3 text-xs font-bold">
+                                                                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-black ${t.type === 'Income' ? 'text-emerald-700 bg-emerald-50' : 'text-rose-700 bg-rose-50'}`}>
+                                                                        {t.type === 'Income' ? 'INGRESO' : 'EGRESO'}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-4 py-3 text-xs text-slate-700">{t.description}</td>
+                                                                <td className={`px-4 py-3 text-xs font-black text-right ${t.type === 'Income' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                                    ${t.amount.toFixed(2)}
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    {/* Ventas en Efectivo */}
+                                    <div className="space-y-3">
+                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Ventas en Efectivo (POS)</h3>
+                                        <div className="bg-slate-50/50 border border-slate-100 rounded-2xl overflow-hidden">
+                                            <table className="w-full text-left border-collapse table-clean">
+                                                <thead>
+                                                    <tr className="bg-slate-900/5">
+                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase">Hora</th>
+                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase">Nota de Venta</th>
+                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase">Observación</th>
+                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-right">Total</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {sessionDetails.sales.length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan={4} className="p-4 text-center text-xs text-slate-400 italic">No hay ventas registradas en esta sesión.</td>
+                                                        </tr>
+                                                    ) : (
+                                                        sessionDetails.sales.map((s: any) => (
+                                                            <tr key={s.id}>
+                                                                <td className="px-4 py-3 text-xs text-slate-500">{new Date(s.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                                                <td className="px-4 py-3 text-xs font-bold text-slate-700">{s.noteNumber}</td>
+                                                                <td className="px-4 py-3 text-xs text-slate-500">{s.observation}</td>
+                                                                <td className="px-4 py-3 text-xs font-black text-indigo-600 text-right">${s.total.toFixed(2)}</td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    {/* Egresos/Gastos Generales en Efectivo */}
+                                    <div className="space-y-3">
+                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Gastos Generales en Efectivo (Módulo Egresos)</h3>
+                                        <div className="bg-slate-50/50 border border-slate-100 rounded-2xl overflow-hidden">
+                                            <table className="w-full text-left border-collapse table-clean">
+                                                <thead>
+                                                    <tr className="bg-slate-900/5">
+                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase">Hora</th>
+                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase">Descripción</th>
+                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-right">Monto</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {sessionDetails.expenses.length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan={3} className="p-4 text-center text-xs text-slate-400 italic">No hay gastos generales registrados en esta sesión.</td>
+                                                        </tr>
+                                                    ) : (
+                                                        sessionDetails.expenses.map((e: any) => (
+                                                            <tr key={e.id}>
+                                                                <td className="px-4 py-3 text-xs text-slate-500">{new Date(e.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                                                <td className="px-4 py-3 text-xs text-slate-700">
+                                                                    {e.description}
+                                                                    {e.notes && <p className="text-[10px] text-slate-400">{e.notes}</p>}
+                                                                </td>
+                                                                <td className="px-4 py-3 text-xs font-black text-rose-600 text-right">${e.amount.toFixed(2)}</td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : null}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
 // Sub-component for history table to keep main component clean
-const CashHistory = ({ history }: { history: CashRegisterSession[] }) => {
+const CashHistory = ({ history, onViewDetails }: { history: CashRegisterSession[]; onViewDetails: (id: number) => void }) => {
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-3">
@@ -498,12 +772,13 @@ const CashHistory = ({ history }: { history: CashRegisterSession[] }) => {
                                 <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Cierre</th>
                                 <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Diferencia</th>
                                 <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Estado</th>
+                                <th className="px-6 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Acciones</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                             {history.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center">
+                                    <td colSpan={7} className="px-6 py-12 text-center">
                                         <div className="flex flex-col items-center gap-2 opacity-30">
                                             <Calculator size={40} />
                                             <p className="font-bold text-sm">No hay sesiones registradas todavía</p>
@@ -545,6 +820,15 @@ const CashHistory = ({ history }: { history: CashRegisterSession[] }) => {
                                                 {session.status === 'Open' ? 'ABIERTA' : 'CERRADA'}
                                             </span>
                                         </td>
+                                        <td className="px-6 py-5 text-right">
+                                            <button
+                                                onClick={() => onViewDetails(session.id)}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-indigo-50 border border-slate-100 hover:border-indigo-100 rounded-xl text-[10px] font-black text-slate-600 hover:text-indigo-600 transition-all uppercase tracking-widest"
+                                            >
+                                                <Info size={12} strokeWidth={3} />
+                                                Detalles
+                                            </button>
+                                        </td>
                                     </tr>
                                 ))
                             )}
@@ -557,7 +841,7 @@ const CashHistory = ({ history }: { history: CashRegisterSession[] }) => {
 };
 
 // Sub-component for denomination counting
-const DenominationCounter = ({ onChange }: { onChange: (total: number) => void }) => {
+const DenominationCounter = ({ onChange }: { onChange: (total: number, inputs: { [key: string]: string }) => void }) => {
 
     const denominations = [
         { value: 100, label: '$100', type: 'bill' },
@@ -588,7 +872,7 @@ const DenominationCounter = ({ onChange }: { onChange: (total: number) => void }
             const count = Number(newInputs[inputKey] || 0);
             total += count * d.value;
         });
-        onChange(total);
+        onChange(total, newInputs);
     };
 
     return (

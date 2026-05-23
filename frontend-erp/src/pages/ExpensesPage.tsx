@@ -32,7 +32,8 @@ export default function ExpensesPage() {
         expenseCategoryId: 0,
         date: new Date().toISOString().split('T')[0],
         paymentMethod: 'Efectivo',
-        notes: ''
+        notes: '',
+        deductFromCashRegister: false
     });
 
     useEffect(() => {
@@ -74,7 +75,8 @@ export default function ExpensesPage() {
                 expenseCategoryId: 0,
                 date: new Date().toISOString().split('T')[0],
                 paymentMethod: 'Efectivo',
-                notes: ''
+                notes: '',
+                deductFromCashRegister: false
             });
             fetchExpenses(currentPage);
         } catch (err: any) {
@@ -359,13 +361,33 @@ export default function ExpensesPage() {
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setFormData({ ...formData, paymentMethod: 'Transferencia' })}
+                                        onClick={() => setFormData({ ...formData, paymentMethod: 'Transferencia', deductFromCashRegister: false })}
                                         className={`flex-1 py-2 rounded-xl text-sm font-bold border ${formData.paymentMethod === 'Transferencia' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-200'}`}
                                     >
                                         Transferencia
                                     </button>
                                 </div>
                             </div>
+
+                            {formData.paymentMethod === 'Efectivo' && (
+                                <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-2xl animate-pop-attention">
+                                    <div className="space-y-0.5">
+                                        <label className="text-xs font-black text-slate-700 uppercase tracking-wider block">¿Descontar de Caja Chica?</label>
+                                        <span className="text-[10px] text-slate-400 font-bold block">
+                                            Resta el dinero de la sesión de caja activa diaría.
+                                        </span>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only peer"
+                                            checked={formData.deductFromCashRegister || false}
+                                            onChange={(e) => setFormData({ ...formData, deductFromCashRegister: e.target.checked })}
+                                        />
+                                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                    </label>
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 mb-1">Notas Adicionales</label>
                                 <textarea

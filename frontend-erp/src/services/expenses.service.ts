@@ -20,6 +20,7 @@ export interface CreateExpenseDto {
     date: string;
     paymentMethod: string;
     notes?: string;
+    deductFromCashRegister?: boolean;
 }
 
 export const expensesService = {

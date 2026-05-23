@@ -81,7 +81,7 @@ public class ExpensesController : ControllerBase
         int? activeSessionId = null;
 
         // ENFORCE CASH REGISTER SESSION FOR CASH EXPENSES
-        if (dto.PaymentMethod == "Efectivo")
+        if (dto.PaymentMethod == "Efectivo" && dto.DeductFromCashRegister)
         {
             var session = await _context.CashRegisterSessions
                 .FirstOrDefaultAsync(s => s.UserId == userId && s.Status == "Open");

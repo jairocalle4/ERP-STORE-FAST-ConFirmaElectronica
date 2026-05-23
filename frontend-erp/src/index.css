@@ -536,4 +536,13 @@ body {
     box-shadow:
         0 25px 50px -12px rgba(79, 70, 229, 0.25),
         0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Pop/Pulse Attention Animation */
+@keyframes pop-attention {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+.animate-pop-attention {
+  animation: pop-attention 0.35s ease-in-out 3;
 }

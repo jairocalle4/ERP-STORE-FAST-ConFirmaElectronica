@@ -153,6 +153,55 @@ public class CashRegisterController : ControllerBase
         return Ok(transaction);
     }
     
+    [HttpGet("session/{id}/details")]
+    public async Task<IActionResult> GetSessionDetails(int id)
+    {
+        var session = await _context.CashRegisterSessions
+            .Include(s => s.User)
+            .FirstOrDefaultAsync(s => s.Id == id);
+
+        if (session == null) return NotFound("Sesión no encontrada.");
+
+        // Manual Transactions (Incomes/Expenses registered directly in cash register)
+        var manualTransactions = await _context.CashTransactions
+            .Where(t => t.CashRegisterSessionId == id)
+            .OrderBy(t => t.Date)
+            .ToListAsync();
+
+        // Cash Sales from POS
+        var sales = await _context.Sales
+            .Where(s => s.CashRegisterSessionId == id && s.PaymentMethod == "Efectivo" && !s.IsVoid)
+            .OrderBy(s => s.Date)
+            .Select(s => new {
+                s.Id,
+                s.NoteNumber,
+                s.Total,
+                s.Date,
+                s.Observation
+            })
+            .ToListAsync();
+
+        // Cash Expenses from Expenses Module
+        var expenses = await _context.Expenses
+            .Where(e => e.CashRegisterSessionId == id && e.PaymentMethod == "Efectivo")
+            .OrderBy(e => e.Date)
+            .Select(e => new {
+                e.Id,
+                e.Description,
+                e.Amount,
+                e.Date,
+                e.Notes
+            })
+            .ToListAsync();
+
+        return Ok(new {
+            session,
+            manualTransactions,
+            sales,
+            expenses
+        });
+    }
+    
     [HttpGet("debug-data")]
     public async Task<IActionResult> GetDebugData()
     {
