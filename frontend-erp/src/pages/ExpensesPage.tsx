@@ -291,15 +291,18 @@ export default function ExpensesPage() {
 
             {/* Modal for New Expense */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in"
+                    onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}
+                >
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] animate-scale-in">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center shrink-0">
                             <h3 className="text-xl font-bold text-slate-800">Registrar Nuevo Gasto</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                                <Plus size={24} className="rotate-45" />
+                            <button type="button" onClick={() => setIsModalOpen(false)} className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 transition-colors">
+                                <Plus size={20} className="rotate-45" />
                             </button>
                         </div>
-                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto custom-scrollbar">
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 mb-1">Descripción</label>
                                 <input

@@ -162,10 +162,31 @@ public class CashRegisterController : ControllerBase
 
         if (session == null) return NotFound("Sesión no encontrada.");
 
+        // Project session into a flat DTO to avoid circular JSON reference (Session -> User -> Sessions -> ...)
+        var sessionDto = new {
+            session.Id,
+            session.Status,
+            session.OpenAmount,
+            session.CloseAmount,
+            session.CalculatedAmount,
+            session.Discrepancy,
+            session.Notes,
+            session.OpenTime,
+            session.CloseTime,
+            User = session.User == null ? null : new { session.User.Id, session.User.Username }
+        };
+
         // Manual Transactions (Incomes/Expenses registered directly in cash register)
         var manualTransactions = await _context.CashTransactions
             .Where(t => t.CashRegisterSessionId == id)
             .OrderBy(t => t.Date)
+            .Select(t => new {
+                t.Id,
+                t.Type,
+                t.Amount,
+                t.Description,
+                t.Date
+            })
             .ToListAsync();
 
         // Cash Sales from POS
@@ -195,7 +216,7 @@ public class CashRegisterController : ControllerBase
             .ToListAsync();
 
         return Ok(new {
-            session,
+            session = sessionDto,
             manualTransactions,
             sales,
             expenses
