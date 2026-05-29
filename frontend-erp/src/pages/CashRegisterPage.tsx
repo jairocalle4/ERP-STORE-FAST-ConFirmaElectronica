@@ -153,66 +153,64 @@ const CashRegisterPage: React.FC = () => {
         );
     }
 
-    // STATE: CLOSED / NO SESSION
-    if (!status || status.status !== 'Open') {
-        return (
-            <div className="p-4 md:p-8 space-y-12 max-w-7xl mx-auto pb-20">
-                <div className="flex items-center justify-center pt-10">
-                    <div className="max-w-xl w-full">
-                        <div className="bg-white/40 backdrop-blur-xl p-8 md:p-12 rounded-[2.5rem] border border-white/60 shadow-2xl shadow-indigo-500/10 text-center animate-scale-in">
-                            <div className="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-violet-600 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-xl shadow-indigo-200 relative">
-                                <Wallet className="w-12 h-12 text-white" />
-                                <div className="absolute -top-2 -right-2 w-8 h-8 bg-rose-500 rounded-full border-4 border-white flex items-center justify-center">
-                                    <Minus className="w-4 h-4 text-white" strokeWidth={4} />
-                                </div>
-                            </div>
+    const isClosed = !status || status.status !== 'Open';
 
-                            <h2 className="text-3xl font-black text-slate-800 tracking-tight mb-3">La caja está cerrada</h2>
-                            <p className="text-slate-500 font-medium mb-10 max-w-sm mx-auto">
-                                Para comenzar a procesar ventas en efectivo y registrar movimientos, primero debes abrir una nueva sesión de caja.
-                            </p>
-
-                            <form onSubmit={handleOpenSession} className="space-y-6">
-                                <div className="text-left group">
-                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3 pl-1">
-                                        Monto Inicial en Efectivo
-                                    </label>
-                                    <div className="relative">
-                                        <div className="absolute left-6 top-1/2 -translate-y-1/2 text-indigo-600 font-black text-xl">$</div>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            className="w-full pl-12 pr-6 py-5 bg-white border border-indigo-100 rounded-[1.5rem] focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-500 transition-all outline-none text-2xl font-black text-slate-800 placeholder:text-slate-200"
-                                            placeholder="0.00"
-                                            value={openAmount}
-                                            onChange={(e) => setOpenAmount(e.target.value)}
-                                            required
-                                            autoFocus
-                                        />
+    return (
+        <>
+            {isClosed ? (
+                <div className="p-4 md:p-8 space-y-12 max-w-7xl mx-auto pb-20">
+                    <div className="flex items-center justify-center pt-10">
+                        <div className="max-w-xl w-full">
+                            <div className="bg-white/40 backdrop-blur-xl p-8 md:p-12 rounded-[2.5rem] border border-white/60 shadow-2xl shadow-indigo-500/10 text-center animate-scale-in">
+                                <div className="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-violet-600 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-xl shadow-indigo-200 relative">
+                                    <Wallet className="w-12 h-12 text-white" />
+                                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-rose-500 rounded-full border-4 border-white flex items-center justify-center">
+                                        <Minus className="w-4 h-4 text-white" strokeWidth={4} />
                                     </div>
                                 </div>
 
-                                <button
-                                    type="submit"
-                                    className="w-full bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-[1.5rem] font-black uppercase tracking-widest text-sm transition-all shadow-xl shadow-slate-900/20 active:scale-95 flex items-center justify-center gap-3"
-                                >
-                                    <CheckCircle2 size={20} className="text-emerald-400" />
-                                    Abrir Caja Ahora
-                                </button>
-                            </form>
+                                <h2 className="text-3xl font-black text-slate-800 tracking-tight mb-3">La caja está cerrada</h2>
+                                <p className="text-slate-500 font-medium mb-10 max-w-sm mx-auto">
+                                    Para comenzar a procesar ventas en efectivo y registrar movimientos, primero debes abrir una nueva sesión de caja.
+                                </p>
+
+                                <form onSubmit={handleOpenSession} className="space-y-6">
+                                    <div className="text-left group">
+                                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3 pl-1">
+                                            Monto Inicial en Efectivo
+                                        </label>
+                                        <div className="relative">
+                                            <div className="absolute left-6 top-1/2 -translate-y-1/2 text-indigo-600 font-black text-xl">$</div>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                className="w-full pl-12 pr-6 py-5 bg-white border border-indigo-100 rounded-[1.5rem] focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-500 transition-all outline-none text-2xl font-black text-slate-800 placeholder:text-slate-200"
+                                                placeholder="0.00"
+                                                value={openAmount}
+                                                onChange={(e) => setOpenAmount(e.target.value)}
+                                                required
+                                                autoFocus
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        className="w-full bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-[1.5rem] font-black uppercase tracking-widest text-sm transition-all shadow-xl shadow-slate-900/20 active:scale-95 flex items-center justify-center gap-3"
+                                    >
+                                        <CheckCircle2 size={20} className="text-emerald-400" />
+                                        Abrir Caja Ahora
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
+
+                    {/* History section for closed state */}
+                    <CashHistory history={history} onViewDetails={handleViewDetails} />
                 </div>
-
-                {/* History section for closed state */}
-                <CashHistory history={history} onViewDetails={handleViewDetails} />
-            </div>
-        );
-    }
-
-    // STATE: OPEN SESSION
-    return (
-        <div className="p-4 md:p-8 animate-fade-in max-w-7xl mx-auto space-y-8 pb-20">
+            ) : (
+                <div className="p-4 md:p-8 animate-fade-in max-w-7xl mx-auto space-y-8 pb-20">
             {/* Header section */}
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="space-y-2">
@@ -344,6 +342,8 @@ const CashRegisterPage: React.FC = () => {
 
             {/* History Section */}
             <CashHistory history={history} onViewDetails={handleViewDetails} />
+            </div>
+            )}
 
             {/* Modal de Cierre */}
             {showCloseModal && (
@@ -746,7 +746,7 @@ const CashRegisterPage: React.FC = () => {
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 };
 

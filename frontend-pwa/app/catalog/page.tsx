@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useRef } from "react";
 import ProductCard from "@/components/ProductCard";
 import Navbar from "@/components/Navbar";
 import InstallPwaPrompt from "@/components/InstallPwaPrompt";
@@ -24,6 +24,8 @@ function CatalogContent() {
     const [hasMore, setHasMore] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [scrolledPastSearch, setScrolledPastSearch] = useState(false);
+    const [isRestored, setIsRestored] = useState(false);
+    const justRestored = useRef(false);
     const PAGE_SIZE = 8;
 
     // Categorías se cargan una sola vez: solo las que tienen productos activos
@@ -96,6 +98,8 @@ function CatalogContent() {
 
     // React to URL parameter changes (Search from Navbar or Filters)
     useEffect(() => {
+        if (!isRestored || justRestored.current) return;
+
         const filterParam = searchParams.get("filter");
         const srchParam = searchParams.get("search");
 
@@ -120,10 +124,12 @@ function CatalogContent() {
             // Initial load without params
             fetchProducts(1, true, null, "", false);
         }
-    }, [searchParams]);
+    }, [searchParams, isRestored]);
 
     // Local Search Effect (Debounced)
     useEffect(() => {
+        if (!isRestored || justRestored.current) return;
+
         const timer = setTimeout(() => {
             const urlSearch = searchParams.get("search") || "";
             if (searchQuery !== urlSearch && searchQuery !== "") {
@@ -141,12 +147,12 @@ function CatalogContent() {
         }, 500);
 
         return () => clearTimeout(timer);
-    }, [searchQuery]);
+    }, [searchQuery, isRestored]);
 
 
     // Infinite Scroll Observer
     useEffect(() => {
-        if (!hasMore || loadingMore || loading) return;
+        if (!isRestored || justRestored.current || !hasMore || loadingMore || loading) return;
 
         const observer = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting) {
@@ -160,22 +166,69 @@ function CatalogContent() {
         if (loader) observer.observe(loader);
 
         return () => observer.disconnect();
-    }, [page, hasMore, loadingMore, loading, selectedCategoryId, searchQuery, isOffersOnly]);
+    }, [page, hasMore, loadingMore, loading, selectedCategoryId, searchQuery, isOffersOnly, isRestored]);
 
+    // Restore logic on mount
     useEffect(() => {
-        // Restaurar posición del scroll
-        const savedScrollPos = sessionStorage.getItem("catalog_scroll_pos");
-        if (savedScrollPos) {
-            setTimeout(() => {
-                window.scrollTo(0, parseInt(savedScrollPos));
-                sessionStorage.removeItem("catalog_scroll_pos");
-            }, 100);
+        const shouldRestore = sessionStorage.getItem("catalog_should_restore") === "true";
+        if (shouldRestore) {
+            const savedSearch = sessionStorage.getItem("catalog_search_query") || "";
+            const savedCategory = sessionStorage.getItem("catalog_selected_category_id");
+            const savedOffers = sessionStorage.getItem("catalog_is_offers_only");
+            const savedPage = sessionStorage.getItem("catalog_page");
+            const savedProducts = sessionStorage.getItem("catalog_products");
+            const savedHasMore = sessionStorage.getItem("catalog_has_more");
+
+            setSearchQuery(savedSearch);
+            setSelectedCategoryId(savedCategory === "null" || !savedCategory ? null : Number(savedCategory));
+            setIsOffersOnly(savedOffers === "true");
+            setPage(savedPage ? Number(savedPage) : 1);
+            setProducts(savedProducts ? JSON.parse(savedProducts) : []);
+            setHasMore(savedHasMore === "true");
+            setLoading(false);
+
+            justRestored.current = true;
+
+            const savedScrollPos = sessionStorage.getItem("catalog_scroll_pos");
+            if (savedScrollPos) {
+                setTimeout(() => {
+                    window.scrollTo(0, parseInt(savedScrollPos));
+                }, 100);
+            }
+
+            // Clean up
+            sessionStorage.removeItem("catalog_should_restore");
+            sessionStorage.removeItem("catalog_scroll_pos");
+            sessionStorage.removeItem("catalog_search_query");
+            sessionStorage.removeItem("catalog_selected_category_id");
+            sessionStorage.removeItem("catalog_is_offers_only");
+            sessionStorage.removeItem("catalog_page");
+            sessionStorage.removeItem("catalog_products");
+            sessionStorage.removeItem("catalog_has_more");
         }
+        setIsRestored(true);
     }, []);
 
-    // Guardar posición antes de salir
+    // Reset justRestored ref after initial render effects run
+    useEffect(() => {
+        if (isRestored && justRestored.current) {
+            const timer = setTimeout(() => {
+                justRestored.current = false;
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [isRestored]);
+
+    // Guardar posición y estado antes de salir
     const handleProductClick = () => {
         sessionStorage.setItem("catalog_scroll_pos", window.scrollY.toString());
+        sessionStorage.setItem("catalog_search_query", searchQuery);
+        sessionStorage.setItem("catalog_selected_category_id", selectedCategoryId !== null ? selectedCategoryId.toString() : "null");
+        sessionStorage.setItem("catalog_is_offers_only", isOffersOnly ? "true" : "false");
+        sessionStorage.setItem("catalog_page", page.toString());
+        sessionStorage.setItem("catalog_products", JSON.stringify(products));
+        sessionStorage.setItem("catalog_has_more", hasMore ? "true" : "false");
+        sessionStorage.setItem("catalog_should_restore", "true");
     };
 
     // const normalizeString = (str: string) => {

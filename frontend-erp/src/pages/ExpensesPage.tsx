@@ -123,7 +123,8 @@ export default function ExpensesPage() {
     // For now, simple list.
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <>
+            <div className="space-y-6 animate-fade-in">
             <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-3xl font-bold text-slate-800">Control de Egresos</h2>
@@ -288,6 +289,7 @@ export default function ExpensesPage() {
                     </GlassCard>
                 </div>
             </div>
+            </div>
 
             {/* Modal for New Expense */}
             {isModalOpen && (
@@ -436,6 +438,6 @@ export default function ExpensesPage() {
                 confirmText="Eliminar"
                 cancelText="Cancelar"
             />
-        </div>
+        </>
     );
 }

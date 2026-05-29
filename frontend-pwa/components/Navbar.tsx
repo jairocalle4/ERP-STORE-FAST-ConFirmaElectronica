@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import { useCompany } from "@/context/CompanyContext";
 import { useTheme, type Theme } from "@/context/ThemeContext";
+import { usePathname } from "next/navigation";
 
 interface NavbarProps {
     showSearch?: boolean;
@@ -19,9 +20,25 @@ const THEME_ICONS: Record<Theme, React.ElementType> = { light: Sun, dark: Moon, 
 const THEME_LABELS: Record<Theme, string> = { light: 'Claro', dark: 'Oscuro', system: 'Sistema' };
 
 export default function Navbar({ showSearch, searchValue, onSearchChange }: NavbarProps) {
+    const pathname = usePathname();
     const [isScrolled, setIsScrolled] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            if (pathname !== "/catalog" && !pathname.startsWith("/product/")) {
+                sessionStorage.removeItem("catalog_should_restore");
+                sessionStorage.removeItem("catalog_scroll_pos");
+                sessionStorage.removeItem("catalog_search_query");
+                sessionStorage.removeItem("catalog_selected_category_id");
+                sessionStorage.removeItem("catalog_is_offers_only");
+                sessionStorage.removeItem("catalog_page");
+                sessionStorage.removeItem("catalog_products");
+                sessionStorage.removeItem("catalog_has_more");
+            }
+        }
+    }, [pathname]);
     const { totalItems, setIsCartOpen } = useCart();
     const { company } = useCompany();
     const { theme, cycleTheme } = useTheme();
