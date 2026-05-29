@@ -98,45 +98,65 @@ export default function Home() {
 
                 {/* ── 2. CATEGORY QUICK LINKS ── */}
                 {!loading && categories.length > 0 && (
-                    <section className="py-10 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
+                    <section className="py-5 md:py-10 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">Explorar por categoría</h2>
-                                <Link href="/catalog" className="text-xs font-bold text-primary flex items-center gap-1 hover:gap-2 transition-all">
-                                    Ver todo <ArrowRight size={12} />
-                                </Link>
-                            </div>
-                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                                {/* "Todos" option */}
+
+                            {/* ── MOBILE: Compact horizontal pill scroll ── */}
+                            <div className="flex md:hidden items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
                                 <Link
                                     href="/catalog"
-                                    className="flex flex-col items-center gap-2 p-3 sm:p-4 rounded-2xl bg-primary text-white hover:shadow-lg hover:shadow-primary/30 transition-all active:scale-95 group"
+                                    className="flex-shrink-0 px-4 py-2 rounded-full bg-primary text-white text-xs font-black uppercase tracking-wide shadow-sm active:scale-95 transition-all"
                                 >
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                                        <ShoppingBag size={20} />
-                                    </div>
-                                    <span className="text-[11px] font-black uppercase tracking-wide text-center leading-tight">Todos</span>
+                                    Todos
                                 </Link>
+                                {categories.map((cat) => (
+                                    <Link
+                                        key={cat.id}
+                                        href={`/catalog?category=${cat.id}`}
+                                        className="flex-shrink-0 px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800 text-foreground text-xs font-semibold border border-slate-200 dark:border-slate-700 hover:border-primary hover:text-primary active:scale-95 transition-all whitespace-nowrap"
+                                    >
+                                        {cat.name}
+                                    </Link>
+                                ))}
+                            </div>
 
-                                {categories.map((cat) => {
-                                    const nameLower = cat.name.toLowerCase();
-                                    const Icon = Object.entries(CATEGORY_ICONS).find(([key]) =>
-                                        nameLower.includes(key)
-                                    )?.[1] || CATEGORY_ICONS.default;
-
-                                    return (
-                                        <Link
-                                            key={cat.id}
-                                            href={`/catalog?category=${cat.id}`}
-                                            className="flex flex-col items-center gap-2 p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-primary/5 dark:hover:bg-slate-700 border border-slate-100 dark:border-slate-700 hover:border-primary/20 transition-all active:scale-95 group"
-                                        >
-                                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white dark:bg-slate-700 shadow-sm flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                                                <Icon size={20} />
-                                            </div>
-                                            <span className="text-[11px] font-bold text-foreground text-center leading-tight line-clamp-2">{cat.name}</span>
-                                        </Link>
-                                    );
-                                })}
+                            {/* ── DESKTOP: Icon card grid ── */}
+                            <div className="hidden md:block">
+                                <div className="flex items-center justify-between mb-5">
+                                    <h2 className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">Explorar por categoría</h2>
+                                    <Link href="/catalog" className="text-xs font-bold text-primary flex items-center gap-1 hover:gap-2 transition-all">
+                                        Ver todo <ArrowRight size={12} />
+                                    </Link>
+                                </div>
+                                <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
+                                    <Link
+                                        href="/catalog"
+                                        className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-primary text-white hover:shadow-lg hover:shadow-primary/30 transition-all active:scale-95"
+                                    >
+                                        <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center">
+                                            <ShoppingBag size={20} />
+                                        </div>
+                                        <span className="text-[11px] font-black uppercase tracking-wide">Todos</span>
+                                    </Link>
+                                    {categories.map((cat) => {
+                                        const nameLower = cat.name.toLowerCase();
+                                        const Icon = Object.entries(CATEGORY_ICONS).find(([key]) =>
+                                            nameLower.includes(key)
+                                        )?.[1] || CATEGORY_ICONS.default;
+                                        return (
+                                            <Link
+                                                key={cat.id}
+                                                href={`/catalog?category=${cat.id}`}
+                                                className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:border-primary/20 hover:bg-primary/5 transition-all active:scale-95 group"
+                                            >
+                                                <div className="w-11 h-11 rounded-xl bg-white dark:bg-slate-700 shadow-sm flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                                                    <Icon size={20} />
+                                                </div>
+                                                <span className="text-[11px] font-bold text-foreground text-center leading-tight line-clamp-1">{cat.name}</span>
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
                     </section>

@@ -11,19 +11,58 @@ export default function Hero() {
     const heroImage = company.coverImageUrl?.trim() || FALLBACK_IMAGE;
 
     return (
-        <section className="relative min-h-screen flex items-center pt-20 overflow-hidden bg-background">
-            {/* Ambient blobs */}
-            <div className="absolute top-1/4 -left-32 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[140px] pointer-events-none" />
-            <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-indigo-400/10 rounded-full blur-[120px] pointer-events-none" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-purple-300/5 rounded-full blur-[160px] pointer-events-none" />
+        <section className="relative flex flex-col lg:flex-row items-center pt-16 lg:pt-0 lg:min-h-screen overflow-hidden bg-background">
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center py-10 lg:py-0">
+            {/* Ambient blobs — desktop only to avoid mobile perf hit */}
+            <div className="hidden lg:block absolute top-1/4 -left-32 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[140px] pointer-events-none" />
+            <div className="hidden lg:block absolute bottom-0 right-0 w-[400px] h-[400px] bg-indigo-400/10 rounded-full blur-[120px] pointer-events-none" />
 
-                {/* ── LEFT: Content ── */}
-                <div className="space-y-6 sm:space-y-8 animate-fade-in relative z-10 text-center lg:text-left">
+            {/* ── MOBILE: Image banner (full-width, compact) ── */}
+            <div className="w-full lg:hidden relative">
+                <div className="relative w-full h-52 sm:h-64 overflow-hidden">
+                    <img
+                        src={heroImage}
+                        alt={`Tienda ${company.name || "JCTech"}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                    />
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-background" />
 
-                    {/* Pill badge */}
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full">
+                    {/* Badge on image */}
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-full border border-white/20">
+                        <Zap size={10} className="text-amber-400 fill-amber-400" />
+                        <span className="text-[9px] uppercase font-black tracking-widest text-white">Colección 2026</span>
+                    </div>
+
+                    {/* Stats strip on image */}
+                    <div className="absolute bottom-0 left-0 right-0 flex justify-around py-2.5 px-4 bg-black/30 backdrop-blur-md">
+                        <div className="text-center">
+                            <p className="text-base font-outfit font-black text-white">15k+</p>
+                            <p className="text-[9px] text-white/70 uppercase font-bold tracking-widest">Clientes</p>
+                        </div>
+                        <div className="w-px bg-white/20" />
+                        <div className="text-center">
+                            <p className="text-base font-outfit font-black text-white">98%</p>
+                            <p className="text-[9px] text-white/70 uppercase font-bold tracking-widest">Satisfechos</p>
+                        </div>
+                        <div className="w-px bg-white/20" />
+                        <div className="text-center">
+                            <p className="text-base font-outfit font-black text-white">24h</p>
+                            <p className="text-[9px] text-white/70 uppercase font-bold tracking-widest">Entrega</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* ── MOBILE + DESKTOP: Content ── */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-16 items-center py-6 lg:py-0 lg:min-h-screen">
+
+                {/* Left column: text */}
+                <div className="space-y-4 sm:space-y-6 animate-fade-in relative z-10 text-center lg:text-left">
+
+                    {/* Pill — only desktop (mobile shows it on image) */}
+                    <div className="hidden lg:inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full">
                         <Zap size={12} className="text-primary fill-primary" />
                         <span className="text-[10px] uppercase font-black tracking-[0.2em] text-primary">
                             Colección 2026 Ya Disponible
@@ -32,83 +71,76 @@ export default function Hero() {
 
                     {/* Headline */}
                     <div>
-                        <h1 className="text-5xl sm:text-6xl md:text-7xl xl:text-8xl font-outfit font-black leading-none tracking-tighter text-foreground">
+                        <h1 className="text-4xl sm:text-5xl lg:text-7xl xl:text-8xl font-outfit font-black leading-none tracking-tighter text-foreground">
                             TODO LO QUE<br />
                             <span className="gradient-text">NECESITAS.</span>
                         </h1>
-                        <p className="mt-4 sm:mt-6 max-w-md mx-auto lg:mx-0 text-base sm:text-lg text-muted-foreground leading-relaxed">
+                        <p className="mt-3 lg:mt-5 max-w-md mx-auto lg:mx-0 text-sm sm:text-base text-muted-foreground leading-relaxed">
                             Tecnología, accesorios y productos de calidad,{" "}
                             <span className="font-semibold text-foreground">directo a tu puerta</span>.
-                            Compra fácil, rápido y seguro.
                         </p>
                     </div>
 
                     {/* CTA Buttons */}
-                    <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start pt-2">
+                    <div className="flex flex-row gap-2.5 justify-center lg:justify-start">
                         <Link
                             href="/catalog"
-                            className="premium-button px-8 py-4 sm:py-5 rounded-2xl flex items-center justify-center gap-3 shadow-2xl shadow-primary/30 group text-base font-bold"
+                            className="premium-button flex-1 sm:flex-none px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-xl shadow-primary/25 group font-bold text-sm"
                         >
-                            <ShoppingBag size={20} />
-                            <span>Explorar Tienda</span>
-                            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                            <ShoppingBag size={16} />
+                            <span>Explorar</span>
+                            <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
                         </Link>
                         <Link
                             href="/catalog?filter=offers"
-                            className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-foreground px-8 py-4 sm:py-5 rounded-2xl font-bold flex items-center justify-center gap-3 shadow-lg shadow-black/5 transition-all active:scale-95 border border-slate-200 dark:border-slate-700 text-base"
+                            className="flex-1 sm:flex-none bg-white dark:bg-slate-800 text-foreground px-6 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md border border-slate-200 dark:border-slate-700 transition-all active:scale-95 text-sm"
                         >
-                            <Star size={18} className="text-amber-500 fill-amber-500" />
-                            <span>Ver Ofertas</span>
+                            <Star size={15} className="text-amber-500 fill-amber-500" />
+                            <span>Ofertas</span>
                         </Link>
                     </div>
 
-                    {/* Stats */}
-                    <div className="flex items-center gap-6 sm:gap-10 justify-center lg:justify-start pt-2">
-                        <div className="text-center lg:text-left">
-                            <p className="text-2xl sm:text-3xl font-outfit font-black text-foreground">15k+</p>
-                            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest mt-0.5">Clientes</p>
-                        </div>
-                        <div className="w-px h-10 bg-slate-200 dark:bg-slate-700" />
-                        <div className="text-center lg:text-left">
-                            <p className="text-2xl sm:text-3xl font-outfit font-black text-foreground">98%</p>
-                            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest mt-0.5">Satisfechos</p>
-                        </div>
-                        <div className="w-px h-10 bg-slate-200 dark:bg-slate-700" />
-                        <div className="text-center lg:text-left">
-                            <p className="text-2xl sm:text-3xl font-outfit font-black text-foreground">24h</p>
-                            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest mt-0.5">Entrega</p>
-                        </div>
+                    {/* Stats — desktop only (mobile shows on image) */}
+                    <div className="hidden lg:flex items-center gap-8 justify-start pt-1">
+                        {[
+                            { val: "15k+", label: "Clientes" },
+                            { val: "98%", label: "Satisfechos" },
+                            { val: "24h", label: "Entrega" },
+                        ].map((stat, i, arr) => (
+                            <div key={i} className="flex items-center gap-8">
+                                <div>
+                                    <p className="text-2xl font-outfit font-black text-foreground">{stat.val}</p>
+                                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">{stat.label}</p>
+                                </div>
+                                {i < arr.length - 1 && <div className="w-px h-10 bg-slate-200 dark:bg-slate-700" />}
+                            </div>
+                        ))}
                     </div>
                 </div>
 
-                {/* ── RIGHT: Image ── */}
-                <div className="relative animate-fade-in [animation-delay:200ms] hidden sm:block">
-                    {/* Main image */}
+                {/* Right column: Image — desktop only */}
+                <div className="relative animate-fade-in [animation-delay:200ms] hidden lg:block">
                     <div className="relative z-10 w-full aspect-square rounded-[3rem] overflow-hidden shadow-2xl shadow-primary/10 hover:shadow-primary/20 rotate-2 hover:rotate-0 transition-all duration-700">
                         <img
                             src={heroImage}
                             alt={`Tienda ${company.name || "JCTech"}`}
                             className="w-full h-full object-cover scale-110 hover:scale-100 transition-transform duration-1000"
-                            onError={(e) => {
-                                (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
-                            }}
+                            onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                     </div>
 
-                    {/* Floating card: Deals */}
-                    <div className="absolute -top-6 -right-4 lg:-right-8 glass-card p-4 rounded-2xl shadow-2xl z-20 hover:-translate-y-1 transition-transform duration-500">
+                    {/* Floating: Deal */}
+                    <div className="absolute -top-6 -right-8 glass-card p-4 rounded-2xl shadow-2xl z-20 hover:-translate-y-1 transition-transform duration-500">
                         <p className="text-[9px] font-black text-primary uppercase tracking-widest">Oferta Activa</p>
                         <p className="text-xl font-outfit font-black text-foreground mt-0.5">-40% DCTO</p>
                         <div className="flex items-center gap-1 mt-1">
-                            {[...Array(5)].map((_, i) => (
-                                <Star key={i} size={10} className="text-amber-400 fill-amber-400" />
-                            ))}
+                            {[...Array(5)].map((_, i) => <Star key={i} size={10} className="text-amber-400 fill-amber-400" />)}
                         </div>
                     </div>
 
-                    {/* Floating card: Shipping */}
-                    <div className="absolute -bottom-6 -left-4 lg:-left-8 glass-card p-4 rounded-2xl shadow-2xl z-20 flex items-center gap-3 hover:-translate-y-1 transition-transform duration-500 [transition-delay:100ms]">
+                    {/* Floating: Shipping */}
+                    <div className="absolute -bottom-6 -left-8 glass-card p-4 rounded-2xl shadow-2xl z-20 flex items-center gap-3 hover:-translate-y-1 transition-transform duration-500">
                         <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600 shrink-0">
                             <ShoppingBag size={20} />
                         </div>
