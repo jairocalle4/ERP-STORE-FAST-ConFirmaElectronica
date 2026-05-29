@@ -255,7 +255,7 @@ function CatalogContent() {
     }, []);
 
     return (
-        <div className="flex flex-col min-h-screen bg-white">
+        <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950">
             <Navbar
                 showSearch={scrolledPastSearch}
                 searchValue={searchQuery}
@@ -288,45 +288,42 @@ function CatalogContent() {
                         </div>
                     </div>
 
-                    {/* Filters Bar */}
-                    <div className="flex items-center gap-3 overflow-x-auto pb-4 mb-8 custom-scrollbar border-b border-slate-50 px-2">
-                        <div className="flex items-center gap-2 px-4 py-2 bg-foreground text-white rounded-xl text-xs font-bold uppercase tracking-widest shrink-0">
-                            <SlidersHorizontal size={14} />
-                            <span>Filtros</span>
-                        </div>
-
-                        <button
-                            onClick={() => handleCategoryChange(null)}
-                            className={`px-6 py-2.5 rounded-xl border text-sm font-semibold transition-all shadow-sm flex-shrink-0 ${selectedCategoryId === null && !isOffersOnly ? 'bg-primary text-white border-primary' : 'bg-white border-slate-100 hover:border-primary hover:text-primary'}`}
-                        >
-                            Todos
-                        </button>
-
-                        <button
-                            onClick={handleOffersChange}
-                            className={`px-6 py-2.5 rounded-xl border text-sm font-semibold transition-all shadow-sm flex-shrink-0 ${isOffersOnly ? 'bg-amber-400 text-amber-950 border-amber-400' : 'bg-white border-slate-100 hover:border-amber-400 hover:text-amber-600'}`}
-                        >
-                            <div className="flex items-center gap-2">
-                                <Star size={14} className={isOffersOnly ? "fill-amber-950" : "text-amber-500"} />
-                                <span>Ofertas</span>
-                            </div>
-                        </button>
-
-                        {categories.map((cat) => (
+                    {/* ── Sticky Filters Bar ── */}
+                    <div className="sticky top-[64px] md:top-[80px] z-40 -mx-2 sm:-mx-6 px-2 sm:px-6 py-3 bg-white/90 dark:bg-slate-950/90 backdrop-blur-lg border-b border-slate-100 dark:border-slate-800 shadow-sm mb-6">
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar max-w-7xl mx-auto">
                             <button
-                                key={cat.id}
-                                onClick={() => handleCategoryChange(cat.id)}
-                                className={`px-6 py-2.5 rounded-xl border text-sm font-semibold transition-all shadow-sm flex-shrink-0 ${selectedCategoryId === cat.id ? 'bg-primary text-white border-primary' : 'bg-white border-slate-100 hover:border-primary hover:text-primary'}`}
+                                onClick={() => handleCategoryChange(null)}
+                                className={`px-4 py-2 rounded-xl border text-xs font-black transition-all shadow-sm flex-shrink-0 uppercase tracking-wide ${selectedCategoryId === null && !isOffersOnly ? 'bg-primary text-white border-primary shadow-primary/20 shadow-md' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-primary hover:text-primary text-foreground'}`}
                             >
-                                {cat.name}
+                                Todos
                             </button>
-                        ))}
+
+                            <button
+                                onClick={handleOffersChange}
+                                className={`px-4 py-2 rounded-xl border text-xs font-black transition-all shadow-sm flex-shrink-0 uppercase tracking-wide flex items-center gap-1.5 ${isOffersOnly ? 'bg-amber-400 text-amber-950 border-amber-400 shadow-amber-300/30 shadow-md' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-amber-400 hover:text-amber-600 text-foreground'}`}
+                            >
+                                <Star size={12} className={isOffersOnly ? "fill-amber-950" : "text-amber-500"} />
+                                Ofertas
+                            </button>
+
+                            {categories.map((cat) => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => handleCategoryChange(cat.id)}
+                                    className={`px-4 py-2 rounded-xl border text-xs font-black transition-all shadow-sm flex-shrink-0 uppercase tracking-wide ${selectedCategoryId === cat.id ? 'bg-primary text-white border-primary shadow-primary/20 shadow-md' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-primary hover:text-primary text-foreground'}`}
+                                >
+                                    {cat.name}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Results Info */}
-                    <div className="flex justify-between items-center mb-8 px-2">
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                            Mostrando {filteredProducts.length} productos
+                    <div className="flex justify-between items-center mb-6 px-2">
+                        <p className="text-xs font-black text-muted-foreground">
+                            <span className="text-foreground">{filteredProducts.length}</span> producto{filteredProducts.length !== 1 ? 's' : ''}
+                            {isOffersOnly ? ' en ofertas' : selectedCategoryId ? ` en ${categories.find(c => c.id === selectedCategoryId)?.name || ''}` : ' en total'}
+                            {searchQuery && <span className="text-primary"> para &ldquo;{searchQuery}&rdquo;</span>}
                         </p>
                     </div>
 

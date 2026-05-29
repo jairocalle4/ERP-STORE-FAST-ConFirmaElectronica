@@ -147,21 +147,20 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
 
                 {/* Content */}
                 <div className="px-1 md:px-3 flex-grow space-y-1 md:space-y-2">
-                    <p className="text-[9px] md:text-[10px] font-bold text-primary uppercase tracking-[0.2em]">{product.category?.name || 'General'}</p>
-                    <h3 className={`font-outfit font-bold text-sm md:text-lg leading-tight text-foreground transition-colors group-hover:text-primary line-clamp-2 ${isOutOfStock ? 'text-slate-400' : ''}`}>{product.name}</h3>
-                    <p className="hidden md:line-clamp-2 text-muted-foreground text-xs leading-relaxed">{product.description}</p>
+                    <span className="inline-block text-[9px] md:text-[10px] font-black text-primary uppercase tracking-[0.15em] bg-primary/8 px-2 py-0.5 rounded-full">{product.category?.name || 'General'}</span>
+                    <h3 className={`font-outfit font-bold text-sm md:text-base leading-tight text-foreground transition-colors group-hover:text-primary line-clamp-2 ${isOutOfStock ? 'text-slate-400' : ''}`}>{product.name}</h3>
                 </div>
 
             </Link>
 
             {/* Footer */}
-            <div className="px-1 md:px-3 mt-2 md:mt-4 pt-3 md:pt-4 border-t border-slate-50 dark:border-slate-700 flex items-center justify-between pb-1 md:pb-2">
+            <div className="px-1 md:px-3 mt-2 md:mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between pb-1 md:pb-2">
                 <div className="flex flex-col">
                     <span className={`text-base md:text-xl font-outfit font-black ${isOutOfStock ? 'text-slate-400 line-through decoration-2' : 'text-foreground'}`}>
                         ${product.price.toFixed(2)}
                     </span>
                     {(product.discountPercentage || 0) > 0 && !isOutOfStock && (
-                        <span className="text-[10px] text-slate-400 line-through">${(product.price / (1 - (product.discountPercentage || 0) / 100)).toFixed(2)}</span>
+                        <span className="text-[10px] text-rose-400 line-through font-medium">${(product.price / (1 - (product.discountPercentage || 0) / 100)).toFixed(2)}</span>
                     )}
                 </div>
                 <button
@@ -174,9 +173,10 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
                         }
                     }}
                     disabled={isOutOfStock}
-                    className={`p-3 md:p-4 rounded-xl md:rounded-2xl shadow-lg transition-all group relative overflow-hidden ${isOutOfStock ? 'bg-slate-100 dark:bg-slate-700 text-slate-300 dark:text-slate-500 cursor-not-allowed shadow-none' : 'premium-button shadow-primary/20'}`}
+                    className={`flex items-center gap-1.5 px-3 py-2.5 md:px-4 md:py-3 rounded-xl md:rounded-2xl font-bold text-xs md:text-sm transition-all ${isOutOfStock ? 'bg-slate-100 dark:bg-slate-700 text-slate-300 dark:text-slate-500 cursor-not-allowed' : 'premium-button shadow-lg shadow-primary/20'}`}
                 >
-                    <ShoppingCart size={16} className={`md:w-5 md:h-5 ${!isOutOfStock && 'group-active:scale-125 transition-transform'}`} />
+                    <ShoppingCart size={14} className={`md:w-4 md:h-4 ${!isOutOfStock && 'group-active:scale-125 transition-transform'}`} />
+                    <span className="hidden sm:inline">Añadir</span>
                 </button>
             </div>
         </div>
