@@ -7,24 +7,13 @@ import Hero from "@/components/Hero";
 import Footer from "@/components/Footer";
 import { Product } from "@/types/product";
 import {
-    Star, Truck, ShieldCheck, Zap, ShoppingBag, ArrowRight,
-    Cpu, Headphones, Smartphone, Monitor, Cable, Package, Tag
+    Star, Truck, ShieldCheck, Zap, ShoppingBag, ArrowRight, Tag
 } from "lucide-react";
 import Link from "next/link";
 
-// Category quick-link icons mapping
-const CATEGORY_ICONS: Record<string, React.ElementType> = {
-    default: Package,
-    "computadores": Monitor,
-    "celulares": Smartphone,
-    "accesorios": Headphones,
-    "cables": Cable,
-    "tecnología": Cpu,
-};
 
 export default function Home() {
     const [products, setProducts] = useState<Product[]>([]);
-    const [categories, setCategories] = useState<Array<{ id: number; name: string }>>([]);
     const [loading, setLoading] = useState(true);
     const [hasOffers, setHasOffers] = useState(false);
 
@@ -32,26 +21,20 @@ export default function Home() {
         async function fetchData() {
             try {
                 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5140/api/v1";
-                const [offersRes, catRes] = await Promise.all([
-                    fetch(`${API_URL}/products?pageSize=8&onlyOffers=true`),
-                    fetch(`${API_URL}/categories`),
-                ]);
 
+                const offersRes = await fetch(`${API_URL}/products?pageSize=8&onlyOffers=true`);
                 let finalProducts: Product[] = [];
 
-                // Load offers first
                 if (offersRes.ok) {
                     const offersData = await offersRes.json();
                     finalProducts = offersData.items || [];
                 }
 
-                // If fewer than 8 offers, fill with newest products
                 if (finalProducts.length < 8) {
                     const newestRes = await fetch(`${API_URL}/products?pageSize=8`);
                     if (newestRes.ok) {
                         const newestData = await newestRes.json();
                         const newestItems: Product[] = newestData.items || [];
-                        // Avoid duplicates
                         const offerIds = new Set(finalProducts.map((p) => p.id));
                         const extras = newestItems.filter((p) => !offerIds.has(p.id));
                         finalProducts = [...finalProducts, ...extras].slice(0, 8);
@@ -60,11 +43,6 @@ export default function Home() {
 
                 setHasOffers(finalProducts.some((p) => (p.discountPercentage || 0) > 0));
                 setProducts(finalProducts);
-
-                if (catRes.ok) {
-                    const catData = await catRes.json();
-                    setCategories((catData.items || catData).slice(0, 6));
-                }
             } catch (error) {
                 console.error(error);
             } finally {
@@ -96,71 +74,6 @@ export default function Home() {
                 {/* ── 1. HERO ── */}
                 <Hero />
 
-                {/* ── 2. CATEGORY QUICK LINKS ── */}
-                {!loading && categories.length > 0 && (
-                    <section className="py-5 md:py-10 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-
-                            {/* ── MOBILE: Compact horizontal pill scroll ── */}
-                            <div className="flex md:hidden items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
-                                <Link
-                                    href="/catalog"
-                                    className="flex-shrink-0 px-4 py-2 rounded-full bg-primary text-white text-xs font-black uppercase tracking-wide shadow-sm active:scale-95 transition-all"
-                                >
-                                    Todos
-                                </Link>
-                                {categories.map((cat) => (
-                                    <Link
-                                        key={cat.id}
-                                        href={`/catalog?category=${cat.id}`}
-                                        className="flex-shrink-0 px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800 text-foreground text-xs font-semibold border border-slate-200 dark:border-slate-700 hover:border-primary hover:text-primary active:scale-95 transition-all whitespace-nowrap"
-                                    >
-                                        {cat.name}
-                                    </Link>
-                                ))}
-                            </div>
-
-                            {/* ── DESKTOP: Icon card grid ── */}
-                            <div className="hidden md:block">
-                                <div className="flex items-center justify-between mb-5">
-                                    <h2 className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">Explorar por categoría</h2>
-                                    <Link href="/catalog" className="text-xs font-bold text-primary flex items-center gap-1 hover:gap-2 transition-all">
-                                        Ver todo <ArrowRight size={12} />
-                                    </Link>
-                                </div>
-                                <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
-                                    <Link
-                                        href="/catalog"
-                                        className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-primary text-white hover:shadow-lg hover:shadow-primary/30 transition-all active:scale-95"
-                                    >
-                                        <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center">
-                                            <ShoppingBag size={20} />
-                                        </div>
-                                        <span className="text-[11px] font-black uppercase tracking-wide">Todos</span>
-                                    </Link>
-                                    {categories.map((cat) => {
-                                        const nameLower = cat.name.toLowerCase();
-                                        const Icon = Object.entries(CATEGORY_ICONS).find(([key]) =>
-                                            nameLower.includes(key)
-                                        )?.[1] || CATEGORY_ICONS.default;
-                                        return (
-                                            <Link
-                                                key={cat.id}
-                                                href={`/catalog?category=${cat.id}`}
-                                                className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:border-primary/20 hover:bg-primary/5 transition-all active:scale-95 group"
-                                            >
-                                                <div className="w-11 h-11 rounded-xl bg-white dark:bg-slate-700 shadow-sm flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                                                    <Icon size={20} />
-                                                </div>
-                                                <span className="text-[11px] font-bold text-foreground text-center leading-tight line-clamp-1">{cat.name}</span>
-                                            </Link>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                )}
 
                 {/* ── 3. WHY CHOOSE US ── */}
                 <section className="py-14 md:py-20 bg-slate-50 dark:bg-slate-950">
