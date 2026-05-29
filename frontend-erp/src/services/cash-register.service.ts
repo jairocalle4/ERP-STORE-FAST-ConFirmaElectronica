@@ -74,5 +74,15 @@ export const cashRegisterService = {
             expenses: Array<{ id: number; description: string; amount: number; date: string; notes?: string }>;
         }>(`/cash-register/session/${id}/details`);
         return response.data;
+    },
+
+    getCurrentSessionDetails: async () => {
+        const response = await api.get<{
+            session: CashRegisterSession;
+            manualTransactions: CashTransaction[];
+            sales: Array<{ id: number; noteNumber: string; total: number; date: string; observation: string }>;
+            expenses: Array<{ id: number; description: string; amount: number; date: string; notes?: string }>;
+        }>('/cash-register/current/details');
+        return response.data;
     }
 };

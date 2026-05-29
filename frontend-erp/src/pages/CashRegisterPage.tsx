@@ -4,7 +4,7 @@ import { useNotificationStore } from '../store/useNotificationStore';
 import {
     Coins, ArrowUpCircle, ArrowDownCircle, Wallet,
     AlertCircle, Clock, CheckCircle2, History,
-    Plus, Minus, Info, X, Calculator, ArrowRight
+    Plus, Minus, Info, X, Calculator, ArrowRight, Eye
 } from 'lucide-react';
 
 const CashRegisterPage: React.FC = () => {
@@ -46,6 +46,21 @@ const CashRegisterPage: React.FC = () => {
         } catch (error) {
             console.error(error);
             addNotification('Error al cargar los detalles de auditoría', 'error');
+            setShowDetailsModal(false);
+        } finally {
+            setDetailsLoading(false);
+        }
+    };
+
+    const handleViewCurrentSession = async () => {
+        setDetailsLoading(true);
+        setShowDetailsModal(true);
+        try {
+            const data = await cashRegisterService.getCurrentSessionDetails();
+            setSessionDetails(data);
+        } catch (error) {
+            console.error(error);
+            addNotification('Error al cargar los movimientos de la sesión activa', 'error');
             setShowDetailsModal(false);
         } finally {
             setDetailsLoading(false);
@@ -233,6 +248,13 @@ const CashRegisterPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-3">
+                    <button
+                        onClick={handleViewCurrentSession}
+                        className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 bg-white border border-slate-100 text-slate-700 rounded-2xl font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm active:scale-95 whitespace-nowrap"
+                    >
+                        <Eye size={18} className="text-indigo-500" />
+                        Ver Movimientos
+                    </button>
                     <button
                         onClick={() => {
                             setTransactionType('Income');

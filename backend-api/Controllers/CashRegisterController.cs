@@ -156,71 +156,62 @@ public class CashRegisterController : ControllerBase
     [HttpGet("session/{id}/details")]
     public async Task<IActionResult> GetSessionDetails(int id)
     {
-        var session = await _context.CashRegisterSessions
-            .Include(s => s.User)
-            .FirstOrDefaultAsync(s => s.Id == id);
+        var sessionDto = await _context.CashRegisterSessions
+            .Where(s => s.Id == id)
+            .Select(s => new {
+                s.Id,
+                s.Status,
+                s.OpenAmount,
+                s.CloseAmount,
+                s.CalculatedAmount,
+                s.Discrepancy,
+                s.Notes,
+                s.OpenTime,
+                s.CloseTime,
+                User = s.User == null ? null : new { s.User.Id, s.User.Username }
+            })
+            .FirstOrDefaultAsync();
 
-        if (session == null) return NotFound("Sesión no encontrada.");
+        if (sessionDto == null) return NotFound("Sesión no encontrada.");
 
-        // Project session into a flat DTO to avoid circular JSON reference (Session -> User -> Sessions -> ...)
-        var sessionDto = new {
-            session.Id,
-            session.Status,
-            session.OpenAmount,
-            session.CloseAmount,
-            session.CalculatedAmount,
-            session.Discrepancy,
-            session.Notes,
-            session.OpenTime,
-            session.CloseTime,
-            User = session.User == null ? null : new { session.User.Id, session.User.Username }
-        };
-
-        // Manual Transactions (Incomes/Expenses registered directly in cash register)
         var manualTransactions = await _context.CashTransactions
             .Where(t => t.CashRegisterSessionId == id)
             .OrderBy(t => t.Date)
-            .Select(t => new {
-                t.Id,
-                t.Type,
-                t.Amount,
-                t.Description,
-                t.Date
-            })
+            .Select(t => new { t.Id, t.Type, t.Amount, t.Description, t.Date })
             .ToListAsync();
 
-        // Cash Sales from POS
         var sales = await _context.Sales
             .Where(s => s.CashRegisterSessionId == id && s.PaymentMethod == "Efectivo" && !s.IsVoid)
             .OrderBy(s => s.Date)
-            .Select(s => new {
-                s.Id,
-                s.NoteNumber,
-                s.Total,
-                s.Date,
-                s.Observation
-            })
+            .Select(s => new { s.Id, s.NoteNumber, s.Total, s.Date, s.Observation })
             .ToListAsync();
 
-        // Cash Expenses from Expenses Module
         var expenses = await _context.Expenses
             .Where(e => e.CashRegisterSessionId == id && e.PaymentMethod == "Efectivo")
             .OrderBy(e => e.Date)
-            .Select(e => new {
-                e.Id,
-                e.Description,
-                e.Amount,
-                e.Date,
-                e.Notes
-            })
+            .Select(e => new { e.Id, e.Description, e.Amount, e.Date, e.Notes })
             .ToListAsync();
 
-        return Ok(new {
-            session = sessionDto,
-            manualTransactions,
-            sales,
-            expenses
-        });
+        return Ok(new { session = sessionDto, manualTransactions, sales, expenses });
+    }
+
+    /// <summary>
+    /// Devuelve el detalle de movimientos de la sesión ACTIVA del usuario actual.
+    /// Permite consultar ventas, egresos y movimientos sin cerrar la caja.
+    /// </summary>
+    [HttpGet("current/details")]
+    public async Task<IActionResult> GetCurrentSessionDetails()
+    {
+        var userId = GetCurrentUserId();
+        var sessionId = await _context.CashRegisterSessions
+            .Where(s => s.UserId == userId && s.Status == "Open")
+            .OrderByDescending(s => s.OpenTime)
+            .Select(s => (int?)s.Id)
+            .FirstOrDefaultAsync();
+
+        if (sessionId == null) return NotFound("No hay caja abierta actualmente.");
+
+        return await GetSessionDetails(sessionId.Value);
     }
     
     [HttpGet("debug-data")]
@@ -232,14 +223,27 @@ public class CashRegisterController : ControllerBase
     }
 
     [HttpGet("history")]
-    public async Task<ActionResult<IEnumerable<CashRegisterSession>>> GetHistory()
+    public async Task<IActionResult> GetHistory()
     {
-        // Admin sees all? Or user sees theirs? Let's show all for now.
-        return await _context.CashRegisterSessions
-            .Include(s => s.User)
+        var sessions = await _context.CashRegisterSessions
             .OrderByDescending(s => s.OpenTime)
             .Take(50)
+            .Select(s => new {
+                s.Id,
+                s.Status,
+                s.OpenTime,
+                s.CloseTime,
+                s.OpenAmount,
+                s.CloseAmount,
+                s.CalculatedAmount,
+                s.Discrepancy,
+                s.Notes,
+                s.UserId,
+                User = s.User == null ? null : new { s.User.Id, s.User.Username }
+            })
             .ToListAsync();
+
+        return Ok(sessions);
     }
 
     private int GetCurrentUserId()
