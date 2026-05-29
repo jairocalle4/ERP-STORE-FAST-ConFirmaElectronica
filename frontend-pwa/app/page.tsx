@@ -8,7 +8,7 @@ import Footer from "@/components/Footer";
 import { Product } from "@/types/product";
 import {
     Star, Truck, ShieldCheck, Zap, ShoppingBag, ArrowRight,
-    Cpu, Headphones, Smartphone, Monitor, Cable, Package
+    Cpu, Headphones, Smartphone, Monitor, Cable, Package, Tag
 } from "lucide-react";
 import Link from "next/link";
 
@@ -26,22 +26,44 @@ export default function Home() {
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Array<{ id: number; name: string }>>([]);
     const [loading, setLoading] = useState(true);
+    const [hasOffers, setHasOffers] = useState(false);
 
     useEffect(() => {
         async function fetchData() {
             try {
                 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5140/api/v1";
-                const [prodRes, catRes] = await Promise.all([
-                    fetch(`${API_URL}/products?pageSize=8`),
+                const [offersRes, catRes] = await Promise.all([
+                    fetch(`${API_URL}/products?pageSize=8&onlyOffers=true`),
                     fetch(`${API_URL}/categories`),
                 ]);
-                if (prodRes.ok) {
-                    const prodData = await prodRes.json();
-                    setProducts(prodData.items || []);
+
+                let finalProducts: Product[] = [];
+
+                // Load offers first
+                if (offersRes.ok) {
+                    const offersData = await offersRes.json();
+                    finalProducts = offersData.items || [];
                 }
+
+                // If fewer than 8 offers, fill with newest products
+                if (finalProducts.length < 8) {
+                    const newestRes = await fetch(`${API_URL}/products?pageSize=8`);
+                    if (newestRes.ok) {
+                        const newestData = await newestRes.json();
+                        const newestItems: Product[] = newestData.items || [];
+                        // Avoid duplicates
+                        const offerIds = new Set(finalProducts.map((p) => p.id));
+                        const extras = newestItems.filter((p) => !offerIds.has(p.id));
+                        finalProducts = [...finalProducts, ...extras].slice(0, 8);
+                    }
+                }
+
+                setHasOffers(finalProducts.some((p) => (p.discountPercentage || 0) > 0));
+                setProducts(finalProducts);
+
                 if (catRes.ok) {
                     const catData = await catRes.json();
-                    setCategories(catData.slice(0, 6));
+                    setCategories((catData.items || catData).slice(0, 6));
                 }
             } catch (error) {
                 console.error(error);
@@ -173,22 +195,34 @@ export default function Home() {
                         {/* Section Header */}
                         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 md:mb-12 px-2">
                             <div className="space-y-2">
-                                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full">
-                                    <Star size={12} fill="currentColor" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Más Populares</span>
+                                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${hasOffers ? 'bg-amber-400/15 text-amber-600' : 'bg-primary/10 text-primary'}`}>
+                                    {hasOffers
+                                        ? <Tag size={12} fill="currentColor" />
+                                        : <Star size={12} fill="currentColor" />
+                                    }
+                                    <span className="text-[10px] font-black uppercase tracking-widest">
+                                        {hasOffers ? 'Mejores Ofertas' : 'Más Populares'}
+                                    </span>
                                 </div>
                                 <h2 className="text-3xl md:text-5xl font-outfit font-black tracking-tighter">
-                                    DESTACADOS <span className="gradient-text">HOY.</span>
+                                    {hasOffers ? (
+                                        <>OFERTAS <span className="text-amber-500">DESTACADAS.</span></>
+                                    ) : (
+                                        <>DESTACADOS <span className="gradient-text">HOY.</span></>
+                                    )}
                                 </h2>
                                 <p className="text-muted-foreground text-sm max-w-md">
-                                    Los artículos más buscados y mejor valorados de nuestra comunidad.
+                                    {hasOffers
+                                        ? 'Los mejores precios del momento. ¡No te los pierdas!'
+                                        : 'Los artículos más buscados y mejor valorados de nuestra comunidad.'
+                                    }
                                 </p>
                             </div>
                             <Link
-                                href="/catalog"
+                                href={hasOffers ? '/catalog?filter=offers' : '/catalog'}
                                 className="shrink-0 hidden sm:flex items-center gap-2 px-6 py-3 bg-slate-50 dark:bg-slate-800 text-foreground rounded-2xl font-bold border border-slate-100 dark:border-slate-700 hover:border-primary/30 hover:text-primary transition-all text-sm"
                             >
-                                Ver todos <ArrowRight size={16} />
+                                {hasOffers ? 'Ver todas las ofertas' : 'Ver todos'} <ArrowRight size={16} />
                             </Link>
                         </div>
 

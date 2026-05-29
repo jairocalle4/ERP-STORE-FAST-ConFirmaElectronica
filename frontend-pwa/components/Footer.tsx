@@ -68,13 +68,14 @@ export default function Footer() {
                         Tu destino de confianza para tecnología, accesorios y productos de calidad. Compra fácil, entrega rápida.
                     </p>
 
-                    {/* Social Icons */}
+                    {/* Social Icons — always colored, animated on hover */}
                     <div className="flex gap-3">
                         <a
                             href="https://www.facebook.com/profile.php?id=61589624723900"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-muted-foreground hover:bg-[#1877F2] hover:text-white transition-all duration-300 border border-slate-100 dark:border-slate-700"
+                            className="w-10 h-10 rounded-xl flex items-center justify-center text-white transition-all duration-300 hover:scale-110 hover:-translate-y-0.5 active:scale-95 shadow-md"
+                            style={{ background: '#1877F2' }}
                             aria-label="Facebook"
                         >
                             <Facebook size={18} />
@@ -83,7 +84,8 @@ export default function Footer() {
                             href="https://www.instagram.com/jctechsoluciones/"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-muted-foreground hover:bg-gradient-to-br hover:from-[#833ab4] hover:via-[#fd1d1d] hover:to-[#fcb045] hover:text-white transition-all duration-300 border border-slate-100 dark:border-slate-700"
+                            className="w-10 h-10 rounded-xl flex items-center justify-center text-white transition-all duration-300 hover:scale-110 hover:-translate-y-0.5 active:scale-95 shadow-md"
+                            style={{ background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)' }}
                             aria-label="Instagram"
                         >
                             <Instagram size={18} />
@@ -93,7 +95,8 @@ export default function Footer() {
                                 href={whatsappUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-muted-foreground hover:bg-[#25D366] hover:text-white transition-all duration-300 border border-slate-100 dark:border-slate-700"
+                                className="w-10 h-10 rounded-xl flex items-center justify-center text-white transition-all duration-300 hover:scale-110 hover:-translate-y-0.5 active:scale-95 shadow-md"
+                                style={{ background: '#25D366' }}
                                 aria-label="WhatsApp"
                             >
                                 <MessageCircle size={18} />
