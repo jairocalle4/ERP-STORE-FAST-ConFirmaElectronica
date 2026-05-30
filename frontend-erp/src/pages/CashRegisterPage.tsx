@@ -728,15 +728,16 @@ const CashRegisterPage: React.FC = () => {
                                     <div className="space-y-3">
                                         <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Movimientos Manuales en Caja</h3>
                                         <div className="bg-slate-50/50 border border-slate-100 rounded-2xl overflow-hidden">
-                                            <table className="w-full text-left border-collapse table-clean">
+                                            <div className="overflow-x-auto">
+                                            <table className="w-full min-w-[520px] text-left border-collapse table-clean">
                                                 <thead>
                                                     <tr className="bg-slate-900/5">
-                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase">Hora</th>
-                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase">Tipo</th>
+                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase whitespace-nowrap">Hora</th>
+                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase whitespace-nowrap">Tipo</th>
                                                         <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase">Descripción</th>
-                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-right">Monto</th>
+                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-right whitespace-nowrap">Monto</th>
                                                         {sessionDetails?.session?.status === 'Open' && (
-                                                            <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-right">Acc.</th>
+                                                            <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-right whitespace-nowrap">Acc.</th>
                                                         )}
                                                     </tr>
                                                 </thead>
@@ -748,14 +749,14 @@ const CashRegisterPage: React.FC = () => {
                                                     ) : (
                                                         sessionDetails.manualTransactions.map((t: any) => (
                                                             <tr key={t.id} className={deletingTransactionId === t.id ? 'opacity-40' : ''}>
-                                                                <td className="px-4 py-3 text-xs text-slate-500">{new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                                                                <td className="px-4 py-3 text-xs font-bold">
+                                                                <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                                                <td className="px-4 py-3 text-xs font-bold whitespace-nowrap">
                                                                     <span className={`px-2 py-0.5 rounded-md text-[10px] font-black ${t.type === 'Income' ? 'text-emerald-700 bg-emerald-50' : 'text-rose-700 bg-rose-50'}`}>
                                                                         {t.type === 'Income' ? 'INGRESO' : 'EGRESO'}
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-4 py-3 text-xs text-slate-700">{t.description}</td>
-                                                                <td className={`px-4 py-3 text-xs font-black text-right ${t.type === 'Income' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                                <td className={`px-4 py-3 text-xs font-black text-right whitespace-nowrap ${t.type === 'Income' ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                                     ${t.amount.toFixed(2)}
                                                                 </td>
                                                                 {sessionDetails?.session?.status === 'Open' && (
@@ -777,6 +778,7 @@ const CashRegisterPage: React.FC = () => {
                                                     )}
                                                 </tbody>
                                             </table>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -784,13 +786,14 @@ const CashRegisterPage: React.FC = () => {
                                     <div className="space-y-3">
                                         <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Ventas en Efectivo (POS)</h3>
                                         <div className="bg-slate-50/50 border border-slate-100 rounded-2xl overflow-hidden">
-                                            <table className="w-full text-left border-collapse table-clean">
+                                            <div className="overflow-x-auto">
+                                            <table className="w-full min-w-[480px] text-left border-collapse table-clean">
                                                 <thead>
                                                     <tr className="bg-slate-900/5">
-                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase">Hora</th>
-                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase">Nota de Venta</th>
+                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase whitespace-nowrap">Hora</th>
+                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase whitespace-nowrap">Nota de Venta</th>
                                                         <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase">Observación</th>
-                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-right">Total</th>
+                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-right whitespace-nowrap">Total</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -801,15 +804,16 @@ const CashRegisterPage: React.FC = () => {
                                                     ) : (
                                                         sessionDetails.sales.map((s: any) => (
                                                             <tr key={s.id}>
-                                                                <td className="px-4 py-3 text-xs text-slate-500">{new Date(s.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                                                                <td className="px-4 py-3 text-xs font-bold text-slate-700">{s.noteNumber}</td>
+                                                                <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{new Date(s.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                                                <td className="px-4 py-3 text-xs font-bold text-slate-700 whitespace-nowrap">{s.noteNumber}</td>
                                                                 <td className="px-4 py-3 text-xs text-slate-500">{s.observation}</td>
-                                                                <td className="px-4 py-3 text-xs font-black text-indigo-600 text-right">${s.total.toFixed(2)}</td>
+                                                                <td className="px-4 py-3 text-xs font-black text-indigo-600 text-right whitespace-nowrap">${s.total.toFixed(2)}</td>
                                                             </tr>
                                                         ))
                                                     )}
                                                 </tbody>
                                             </table>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -817,12 +821,13 @@ const CashRegisterPage: React.FC = () => {
                                     <div className="space-y-3">
                                         <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Gastos Generales en Efectivo (Módulo Egresos)</h3>
                                         <div className="bg-slate-50/50 border border-slate-100 rounded-2xl overflow-hidden">
-                                            <table className="w-full text-left border-collapse table-clean">
+                                            <div className="overflow-x-auto">
+                                            <table className="w-full min-w-[380px] text-left border-collapse table-clean">
                                                 <thead>
                                                     <tr className="bg-slate-900/5">
-                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase">Hora</th>
+                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase whitespace-nowrap">Hora</th>
                                                         <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase">Descripción</th>
-                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-right">Monto</th>
+                                                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-right whitespace-nowrap">Monto</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -833,17 +838,18 @@ const CashRegisterPage: React.FC = () => {
                                                     ) : (
                                                         sessionDetails.expenses.map((e: any) => (
                                                             <tr key={e.id}>
-                                                                <td className="px-4 py-3 text-xs text-slate-500">{new Date(e.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                                                <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{new Date(e.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
                                                                 <td className="px-4 py-3 text-xs text-slate-700">
                                                                     {e.description}
                                                                     {e.notes && <p className="text-[10px] text-slate-400">{e.notes}</p>}
                                                                 </td>
-                                                                <td className="px-4 py-3 text-xs font-black text-rose-600 text-right">${e.amount.toFixed(2)}</td>
+                                                                <td className="px-4 py-3 text-xs font-black text-rose-600 text-right whitespace-nowrap">${e.amount.toFixed(2)}</td>
                                                             </tr>
                                                         ))
                                                     )}
                                                 </tbody>
                                             </table>
+                                            </div>
                                         </div>
                                     </div>
                                 </>
