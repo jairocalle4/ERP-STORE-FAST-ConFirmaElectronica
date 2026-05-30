@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { cashRegisterService, type CashRegisterSession, type CashRegisterSummary } from '../services/cash-register.service';
 import { useNotificationStore } from '../store/useNotificationStore';
 import {
     Coins, ArrowUpCircle, ArrowDownCircle, Wallet,
     AlertCircle, Clock, CheckCircle2, History,
-    Plus, Minus, Info, X, Calculator, ArrowRight, Eye
+    Plus, Minus, Info, X, Calculator, ArrowRight, Eye, Trash2, Loader2
 } from 'lucide-react';
 
 const CashRegisterPage: React.FC = () => {
@@ -15,6 +15,12 @@ const CashRegisterPage: React.FC = () => {
     const [closeAmount, setCloseAmount] = useState<string>('');
     const [closeNotes, setCloseNotes] = useState('');
     const [showCloseModal, setShowCloseModal] = useState(false);
+
+    // Submission guards — prevent double-click
+    const [isSubmittingTransaction, setIsSubmittingTransaction] = useState(false);
+    const [isSubmittingOpen, setIsSubmittingOpen] = useState(false);
+    const [isSubmittingClose, setIsSubmittingClose] = useState(false);
+    const [deletingTransactionId, setDeletingTransactionId] = useState<number | null>(null);
 
     // Transaction Modal
     const [showTransactionModal, setShowTransactionModal] = useState(false);
@@ -114,6 +120,8 @@ const CashRegisterPage: React.FC = () => {
 
     const handleOpenSession = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSubmittingOpen) return; // Guard against double submit
+        setIsSubmittingOpen(true);
         try {
             await cashRegisterService.openSession(Number(openAmount));
             addNotification('Caja abierta correctamente', 'success');
@@ -121,13 +129,16 @@ const CashRegisterPage: React.FC = () => {
             fetchHistory();
         } catch (error: any) {
             addNotification(error.response?.data || 'Error al abrir caja', 'error');
+        } finally {
+            setIsSubmittingOpen(false);
         }
     };
 
     const handleCloseSession = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSubmittingClose) return; // Guard against double submit
+        setIsSubmittingClose(true);
         try {
-            // Serialize denominations count and closeNotes together into the Notes string
             const notesPayload = JSON.stringify({
                 userNotes: closeNotes,
                 denominations: denominationInputs
@@ -142,11 +153,15 @@ const CashRegisterPage: React.FC = () => {
             setDenominationInputs({});
         } catch (error: any) {
             addNotification(error.response?.data || 'Error al cerrar caja', 'error');
+        } finally {
+            setIsSubmittingClose(false);
         }
     };
 
     const handleAddTransaction = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSubmittingTransaction) return; // Guard against double-click
+        setIsSubmittingTransaction(true);
         try {
             await cashRegisterService.addTransaction(transactionType, Number(transactionAmount), transactionDesc);
             addNotification('Movimiento registrado satisfactoriamente', 'success');
@@ -156,6 +171,31 @@ const CashRegisterPage: React.FC = () => {
             fetchSummary();
         } catch (error: any) {
             addNotification('Error al registrar movimiento', 'error');
+        } finally {
+            setIsSubmittingTransaction(false);
+        }
+    };
+
+    const handleDeleteTransaction = async (transactionId: number) => {
+        if (!window.confirm('¿Eliminar este movimiento? Esta acción no se puede deshacer.')) return;
+        if (deletingTransactionId !== null) return; // Already deleting one
+        setDeletingTransactionId(transactionId);
+        try {
+            await cashRegisterService.deleteTransaction(transactionId);
+            addNotification('Movimiento eliminado', 'success');
+            // Refresh the open details modal
+            if (sessionDetails?.session?.status === 'Open') {
+                const data = await cashRegisterService.getCurrentSessionDetails();
+                setSessionDetails(data);
+            } else if (sessionDetails?.session?.id) {
+                const data = await cashRegisterService.getSessionDetails(sessionDetails.session.id);
+                setSessionDetails(data);
+            }
+            fetchSummary();
+        } catch (error: any) {
+            addNotification(error.response?.data || 'Error al eliminar el movimiento', 'error');
+        } finally {
+            setDeletingTransactionId(null);
         }
     };
 
@@ -211,10 +251,14 @@ const CashRegisterPage: React.FC = () => {
 
                                     <button
                                         type="submit"
-                                        className="w-full bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-[1.5rem] font-black uppercase tracking-widest text-sm transition-all shadow-xl shadow-slate-900/20 active:scale-95 flex items-center justify-center gap-3"
+                                        disabled={isSubmittingOpen}
+                                        className="w-full bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-[1.5rem] font-black uppercase tracking-widest text-sm transition-all shadow-xl shadow-slate-900/20 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
                                     >
-                                        <CheckCircle2 size={20} className="text-emerald-400" />
-                                        Abrir Caja Ahora
+                                        {isSubmittingOpen ? (
+                                            <><Loader2 size={20} className="animate-spin" /> Abriendo...</>
+                                        ) : (
+                                            <><CheckCircle2 size={20} className="text-emerald-400" /> Abrir Caja Ahora</>
+                                        )}
                                     </button>
                                 </form>
                             </div>
@@ -449,10 +493,14 @@ const CashRegisterPage: React.FC = () => {
 
                             <button
                                 onClick={handleCloseSession}
-                                className="w-full py-5 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl shadow-rose-200 active:scale-95 flex items-center justify-center gap-2"
+                                disabled={isSubmittingClose}
+                                className="w-full py-5 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl shadow-rose-200 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
                             >
-                                Confirmar y Cerrar Caja
-                                <ArrowRight size={16} />
+                                {isSubmittingClose ? (
+                                    <><Loader2 size={16} className="animate-spin" /> Cerrando caja...</>
+                                ) : (
+                                    <>Confirmar y Cerrar Caja <ArrowRight size={16} /></>
+                                )}
                             </button>
                         </div>
                     </div>
@@ -523,9 +571,14 @@ const CashRegisterPage: React.FC = () => {
 
                             <button
                                 type="submit"
-                                className="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl shadow-indigo-200 active:scale-95"
+                                disabled={isSubmittingTransaction}
+                                className="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl shadow-indigo-200 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
                             >
-                                Registrar Movimiento
+                                {isSubmittingTransaction ? (
+                                    <><Loader2 size={16} className="animate-spin" /> Registrando...</>
+                                ) : (
+                                    'Registrar Movimiento'
+                                )}
                             </button>
                         </form>
                     </div>
@@ -668,16 +721,19 @@ const CashRegisterPage: React.FC = () => {
                                                         <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase">Tipo</th>
                                                         <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase">Descripción</th>
                                                         <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-right">Monto</th>
+                                                        {sessionDetails?.session?.status === 'Open' && (
+                                                            <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase text-right">Acc.</th>
+                                                        )}
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     {sessionDetails.manualTransactions.length === 0 ? (
                                                         <tr>
-                                                            <td colSpan={4} className="p-4 text-center text-xs text-slate-400 italic">No hay movimientos manuales en esta sesión.</td>
+                                                            <td colSpan={sessionDetails?.session?.status === 'Open' ? 5 : 4} className="p-4 text-center text-xs text-slate-400 italic">No hay movimientos manuales en esta sesión.</td>
                                                         </tr>
                                                     ) : (
                                                         sessionDetails.manualTransactions.map((t: any) => (
-                                                            <tr key={t.id}>
+                                                            <tr key={t.id} className={deletingTransactionId === t.id ? 'opacity-40' : ''}>
                                                                 <td className="px-4 py-3 text-xs text-slate-500">{new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
                                                                 <td className="px-4 py-3 text-xs font-bold">
                                                                     <span className={`px-2 py-0.5 rounded-md text-[10px] font-black ${t.type === 'Income' ? 'text-emerald-700 bg-emerald-50' : 'text-rose-700 bg-rose-50'}`}>
@@ -688,6 +744,20 @@ const CashRegisterPage: React.FC = () => {
                                                                 <td className={`px-4 py-3 text-xs font-black text-right ${t.type === 'Income' ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                                     ${t.amount.toFixed(2)}
                                                                 </td>
+                                                                {sessionDetails?.session?.status === 'Open' && (
+                                                                    <td className="px-4 py-3 text-right">
+                                                                        <button
+                                                                            onClick={() => handleDeleteTransaction(t.id)}
+                                                                            disabled={deletingTransactionId !== null}
+                                                                            title="Eliminar movimiento"
+                                                                            className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                                                        >
+                                                                            {deletingTransactionId === t.id
+                                                                                ? <Loader2 size={13} className="animate-spin" />
+                                                                                : <Trash2 size={13} />}
+                                                                        </button>
+                                                                    </td>
+                                                                )}
                                                             </tr>
                                                         ))
                                                     )}

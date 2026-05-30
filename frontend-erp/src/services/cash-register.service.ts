@@ -61,6 +61,11 @@ export const cashRegisterService = {
         return response.data;
     },
 
+    deleteTransaction: async (id: number) => {
+        await api.delete(`/cash-register/transaction/${id}`);
+    },
+
+
     getHistory: async () => {
         const response = await api.get<CashRegisterSession[]>('/cash-register/history');
         return response.data;

@@ -246,6 +246,31 @@ public class CashRegisterController : ControllerBase
         return Ok(sessions);
     }
 
+    [HttpDelete("transaction/{id}")]
+    public async Task<IActionResult> DeleteTransaction(int id)
+    {
+        var userId = GetCurrentUserId();
+
+        var transaction = await _context.CashTransactions
+            .Include(t => t.CashRegisterSession)
+            .FirstOrDefaultAsync(t => t.Id == id);
+
+        if (transaction == null)
+            return NotFound("Movimiento no encontrado.");
+
+        // Safety: only allow deletion from the current user's OPEN session
+        if (transaction.CashRegisterSession.UserId != userId)
+            return Forbid();
+
+        if (transaction.CashRegisterSession.Status != "Open")
+            return BadRequest("Solo se pueden eliminar movimientos de una sesión activa.");
+
+        _context.CashTransactions.Remove(transaction);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
     private int GetCurrentUserId()
     {
         var claim = User.FindFirst("id")?.Value;
