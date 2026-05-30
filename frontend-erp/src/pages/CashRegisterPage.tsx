@@ -22,6 +22,13 @@ const CashRegisterPage: React.FC = () => {
     const [isSubmittingClose, setIsSubmittingClose] = useState(false);
     const [deletingTransactionId, setDeletingTransactionId] = useState<number | null>(null);
 
+    // Custom confirm modal (replaces window.confirm)
+    const [confirmModal, setConfirmModal] = useState<{
+        open: boolean;
+        transactionId: number | null;
+        description: string;
+    }>({ open: false, transactionId: null, description: '' });
+
     // Transaction Modal
     const [showTransactionModal, setShowTransactionModal] = useState(false);
     const [transactionType, setTransactionType] = useState<'Income' | 'Expense'>('Income');
@@ -176,14 +183,21 @@ const CashRegisterPage: React.FC = () => {
         }
     };
 
-    const handleDeleteTransaction = async (transactionId: number) => {
-        if (!window.confirm('¿Eliminar este movimiento? Esta acción no se puede deshacer.')) return;
-        if (deletingTransactionId !== null) return; // Already deleting one
+    // Opens the custom confirm modal (does NOT delete yet)
+    const handleDeleteTransaction = (transactionId: number, description: string) => {
+        setConfirmModal({ open: true, transactionId, description });
+    };
+
+    // Called when user clicks "Confirmar" inside the custom modal
+    const confirmDeleteNow = async () => {
+        const transactionId = confirmModal.transactionId;
+        if (!transactionId) return;
+        setConfirmModal({ open: false, transactionId: null, description: '' });
+        if (deletingTransactionId !== null) return;
         setDeletingTransactionId(transactionId);
         try {
             await cashRegisterService.deleteTransaction(transactionId);
             addNotification('Movimiento eliminado', 'success');
-            // Refresh the open details modal
             if (sessionDetails?.session?.status === 'Open') {
                 const data = await cashRegisterService.getCurrentSessionDetails();
                 setSessionDetails(data);
@@ -747,7 +761,7 @@ const CashRegisterPage: React.FC = () => {
                                                                 {sessionDetails?.session?.status === 'Open' && (
                                                                     <td className="px-4 py-3 text-right">
                                                                         <button
-                                                                            onClick={() => handleDeleteTransaction(t.id)}
+                                                                            onClick={() => handleDeleteTransaction(t.id, t.description)}
                                                                             disabled={deletingTransactionId !== null}
                                                                             title="Eliminar movimiento"
                                                                             className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
@@ -834,6 +848,62 @@ const CashRegisterPage: React.FC = () => {
                                     </div>
                                 </>
                             ) : null}
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* ── Custom Confirm Delete Modal ── */}
+            {confirmModal.open && (
+                <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+                        onClick={() => setConfirmModal({ open: false, transactionId: null, description: '' })}
+                    />
+
+                    {/* Sheet — slides up on mobile, centered on desktop */}
+                    <div className="relative w-full sm:max-w-sm bg-white sm:rounded-[2rem] rounded-t-[2rem] shadow-2xl animate-slide-in-up overflow-hidden z-10">
+                        {/* Top handle — mobile only */}
+                        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+                            <div className="w-10 h-1.5 bg-slate-200 rounded-full" />
+                        </div>
+
+                        <div className="p-6 sm:p-8 space-y-5">
+                            {/* Icon */}
+                            <div className="flex items-center justify-center">
+                                <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center">
+                                    <Trash2 size={28} className="text-rose-500" />
+                                </div>
+                            </div>
+
+                            {/* Text */}
+                            <div className="text-center space-y-1.5">
+                                <h3 className="text-lg font-black text-slate-800 tracking-tight">Eliminar Movimiento</h3>
+                                <p className="text-sm text-slate-500 font-medium">
+                                    ¿Eliminar
+                                    {confirmModal.description
+                                        ? <> <span className="font-bold text-slate-700">&ldquo;{confirmModal.description}&rdquo;</span>? </>
+                                        : ' este movimiento? '
+                                    }
+                                    Esta acción no se puede deshacer.
+                                </p>
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => setConfirmModal({ open: false, transactionId: null, description: '' })}
+                                    className="py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-black text-sm transition-all active:scale-95"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={confirmDeleteNow}
+                                    className="py-4 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl font-black text-sm transition-all active:scale-95 shadow-lg shadow-rose-200"
+                                >
+                                    Sí, Eliminar
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
