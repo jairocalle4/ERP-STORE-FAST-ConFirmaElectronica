@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { cashRegisterService, type CashRegisterSession, type CashRegisterSummary } from '../services/cash-register.service';
 import { useNotificationStore } from '../store/useNotificationStore';
 import {
