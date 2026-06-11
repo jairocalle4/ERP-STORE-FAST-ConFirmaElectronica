@@ -116,21 +116,52 @@ public class ElectronicBillingController : ControllerBase
         var company = await _context.CompanySettings.FirstOrDefaultAsync();
         if (company == null) return NotFound("Configuración de empresa no encontrada");
 
-        // Guardar el archivo en una carpeta segura fuera de wwwroot
-        var folder = Path.Combine("private", "signatures");
-        Directory.CreateDirectory(folder);
-        var filePath = Path.Combine(folder, $"signature_{company.Ruc}.p12");
+        // Validar temporalmente el certificado y la contraseña
+        var tempPath = Path.GetTempFileName();
+        try
+        {
+            using (var stream = new FileStream(tempPath, FileMode.Create))
+                await request.File.CopyToAsync(stream);
 
-        using (var stream = new FileStream(filePath, FileMode.Create))
-            await request.File.CopyToAsync(stream);
+            try
+            {
+                // Usar X509CertificateLoader de .NET 9
+                using var cert = System.Security.Cryptography.X509Certificates.X509CertificateLoader.LoadPkcs12FromFile(
+                    tempPath,
+                    request.Password ?? string.Empty,
+                    System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.Exportable);
 
-        company.ElectronicSignaturePath = filePath;
-        if (!string.IsNullOrEmpty(request.Password))
-            company.ElectronicSignaturePassword = request.Password;
+                if (DateTime.Now < cert.NotBefore || DateTime.Now > cert.NotAfter)
+                {
+                    return BadRequest($"La firma electrónica está fuera de su período de validez. Válida desde: {cert.NotBefore} hasta {cert.NotAfter}");
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"La contraseña de la firma es incorrecta o el archivo .p12 está dañado. Detalle: {ex.Message}");
+            }
 
-        await _context.SaveChangesAsync();
+            // Si es válido, guardar en la carpeta signatures con ruta absoluta estable
+            var baseDir = AppContext.BaseDirectory;
+            var folder = Path.Combine(baseDir, "private", "signatures");
+            Directory.CreateDirectory(folder);
+            var filePath = Path.Combine(folder, $"signature_{company.Ruc}.p12");
 
-        return Ok(new { message = "Firma electrónica cargada exitosamente", path = filePath });
+            System.IO.File.Copy(tempPath, filePath, overwrite: true);
+
+            company.ElectronicSignaturePath = filePath;
+            if (!string.IsNullOrEmpty(request.Password))
+                company.ElectronicSignaturePassword = request.Password;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Firma electrónica cargada y verificada exitosamente", path = filePath });
+        }
+        finally
+        {
+            if (System.IO.File.Exists(tempPath))
+                System.IO.File.Delete(tempPath);
+        }
     }
 
     // ──────────────────────────────────────────────────────

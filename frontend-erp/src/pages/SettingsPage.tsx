@@ -419,7 +419,14 @@ export default function SettingsPage() {
                                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Régimen Tributario</label>
                                 <select
                                     value={feSettings.tributaryRegime ?? 'RIMPE_NEGOCIO_POPULAR'}
-                                    onChange={e => setFeSettings(s => ({ ...s, tributaryRegime: e.target.value }))}
+                                    onChange={e => {
+                                        const regime = e.target.value;
+                                        setFeSettings(s => ({
+                                            ...s,
+                                            tributaryRegime: regime,
+                                            ivaRate: regime === 'RIMPE_NEGOCIO_POPULAR' ? 0 : (s.ivaRate === 0 ? 15 : s.ivaRate)
+                                        }));
+                                    }}
                                     className="w-full px-4 py-3 bg-white/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/50 outline-none text-sm"
                                 >
                                     <option value="RIMPE_NEGOCIO_POPULAR">RIMPE – Negocio Popular</option>
