@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { X, Printer, Calendar, User, Package, Hash, CreditCard, Download, Trash2, FileText } from 'lucide-react';
+import { X, Printer, Calendar, User, Package, Hash, CreditCard, Download, Trash2, FileText, Zap } from 'lucide-react';
 import type { Sale } from '../../services/sale.service';
 import { saleService } from '../../services/sale.service';
 import { companyService, type CompanySetting } from '../../services/company.service';
@@ -20,6 +20,27 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({ isOpen, onClose, sa
     const [isVoiding, setIsVoiding] = React.useState(false);
     const [showConfirmVoid, setShowConfirmVoid] = React.useState(false);
     const [company, setCompany] = React.useState<CompanySetting | null>(null);
+    const [isReemitting, setIsReemitting] = React.useState(false);
+
+    const handleReemit = async () => {
+        if (!sale) return;
+        setIsReemitting(true);
+        try {
+            const result = await electronicBillingService.emitirFactura(sale.id);
+            if (result.success) {
+                addNotification('¡Factura emitida y autorizada con éxito!', 'success');
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                addNotification(`Fallo al emitir la factura: ${result.errorMessage}`, 'error');
+            }
+        } catch (error: any) {
+            console.error(error);
+            const serverError = error?.response?.data?.error || error?.response?.data || error?.message || 'Error al emitir';
+            addNotification(`Error al emitir factura: ${serverError}`, 'error');
+        } finally {
+            setIsReemitting(false);
+        }
+    };
 
     // Load company settings for print
     React.useEffect(() => {
@@ -550,26 +571,42 @@ ${!isElectronic ? `<div class="pban">⚠ <b>DOCUMENTO INTERNO — NO VÁLIDO COM
                                 <FileText size={18} />
                                 Factura A4
                             </button>
-                            {/* FE: XML & RIDE download buttons if authorized */}
+                            {/* FE: XML & RIDE download buttons if authorized, or Reintentar button if failed/pending */}
                             {(sale as any).isElectronic && (
-                                <>
+                                (sale as any).electronicStatus === 'AUTORIZADO' ? (
+                                    <>
+                                        <button
+                                            onClick={() => electronicBillingService.descargarXml(sale.id, sale.noteNumber || String(sale.id))}
+                                            className="px-4 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] transition-all flex items-center gap-2 shadow-lg shadow-blue-200"
+                                            title="Descargar XML Autorizado"
+                                        >
+                                            <Download size={16} />
+                                            XML
+                                        </button>
+                                        <button
+                                            onClick={() => electronicBillingService.descargarRide(sale.id, sale.noteNumber || String(sale.id))}
+                                            className="px-4 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] transition-all flex items-center gap-2 shadow-lg shadow-purple-200"
+                                            title="Descargar RIDE (PDF SRI)"
+                                        >
+                                            <FileText size={16} />
+                                            RIDE
+                                        </button>
+                                    </>
+                                ) : (
                                     <button
-                                        onClick={() => electronicBillingService.descargarXml(sale.id, sale.noteNumber || String(sale.id))}
-                                        className="px-4 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] transition-all flex items-center gap-2 shadow-lg shadow-blue-200"
-                                        title="Descargar XML Autorizado"
+                                        onClick={handleReemit}
+                                        disabled={isReemitting}
+                                        className="px-4 py-4 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] transition-all flex items-center gap-2 shadow-lg shadow-amber-200"
+                                        title="Reintentar emisión de factura electrónica"
                                     >
-                                        <Download size={16} />
-                                        XML
+                                        {isReemitting ? (
+                                            <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                                        ) : (
+                                            <Zap size={16} />
+                                        )}
+                                        Reintentar FE
                                     </button>
-                                    <button
-                                        onClick={() => electronicBillingService.descargarRide(sale.id, sale.noteNumber || String(sale.id))}
-                                        className="px-4 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] transition-all flex items-center gap-2 shadow-lg shadow-purple-200"
-                                        title="Descargar RIDE (PDF SRI)"
-                                    >
-                                        <FileText size={16} />
-                                        RIDE
-                                    </button>
-                                </>
+                                )
                             )}
                         </div>
                     </div>
