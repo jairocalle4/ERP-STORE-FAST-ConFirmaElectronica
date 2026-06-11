@@ -80,8 +80,10 @@ export default function SettingsPage() {
             setFirmaFile(null);
             setFirmaPassword('');
             addNotification('¡Firma electrónica cargada exitosamente!', 'success');
-        } catch {
-            addNotification('Error al subir la firma. Verifica el archivo y la contraseña.', 'error');
+        } catch (error: any) {
+            console.error('Error al subir firma:', error);
+            const serverError = error?.response?.data?.error || error?.response?.data || error?.message || 'Error interno del servidor';
+            addNotification(`Error al subir la firma: ${serverError}`, 'error');
         } finally {
             setUploadingFirma(false);
         }
