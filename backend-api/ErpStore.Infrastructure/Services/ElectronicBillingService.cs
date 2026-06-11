@@ -244,7 +244,14 @@ public class ElectronicBillingService : IElectronicBillingService
         sb.AppendLine($"    <ptoEmi>{(company.SriPointOfIssue ?? "001").PadLeft(3, '0')}</ptoEmi>");
         sb.AppendLine($"    <secuencial>{secuencial.ToString().PadLeft(9, '0')}</secuencial>");
         sb.AppendLine($"    <dirMatriz>{EscapeXml(company.Address)}</dirMatriz>");
-        sb.AppendLine($"    <contribuyenteRimpe>CONTRIBUYENTE NEGOCIO POPULAR</contribuyenteRimpe>");
+        if (company.TributaryRegime == "RIMPE_NEGOCIO_POPULAR")
+        {
+            sb.AppendLine("    <contribuyenteRimpe>CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE</contribuyenteRimpe>");
+        }
+        else if (company.TributaryRegime == "RIMPE_EMPRENDEDOR")
+        {
+            sb.AppendLine("    <contribuyenteRimpe>CONTRIBUYENTE RÉGIMEN RIMPE</contribuyenteRimpe>");
+        }
         sb.AppendLine("  </infoTributaria>");
 
         // ── infoFactura ──
