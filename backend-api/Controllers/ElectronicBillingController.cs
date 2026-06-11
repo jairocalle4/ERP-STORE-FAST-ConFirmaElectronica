@@ -12,7 +12,7 @@ namespace ErpStore.Controllers;
 /// Endpoints: emitir, descargar XML, descargar RIDE, subir firma .p12, consultar estado.
 /// </summary>
 [ApiController]
-[Route("api/electronic-billing")]
+[Route("api/v1/electronic-billing")]
 [Authorize]
 public class ElectronicBillingController : ControllerBase
 {
