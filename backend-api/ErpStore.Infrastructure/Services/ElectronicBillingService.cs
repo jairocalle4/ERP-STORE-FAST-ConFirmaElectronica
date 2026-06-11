@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography.Xml;
 using System.Text;
 using System.Xml;
 using ErpStore.Application.Interfaces;
@@ -336,24 +339,210 @@ public class ElectronicBillingService : IElectronicBillingService
     // FIRMA XML (XAdES-BES con .p12)
     // ─────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Firma el XML con XAdES-BES usando el certificado .p12 del contribuyente.
+    /// Cumple la Ficha Técnica de Comprobantes Electrónicos SRI Ecuador v2.1.0.
+    /// Algoritmos: RSA-SHA1 (firma), SHA1 (digest de referencias), C14N (canonicalización).
+    /// </summary>
     private Task<string> FirmarXml(string xmlContent, CompanySetting company)
     {
         if (string.IsNullOrEmpty(company.ElectronicSignaturePath) ||
             !File.Exists(company.ElectronicSignaturePath))
         {
             throw new InvalidOperationException(
-                "Firma electrónica no configurada. " +
-                "Por favor sube tu archivo .p12 en Configuración → Facturación Electrónica.");
+                "Firma electrónica: archivo .p12 no encontrado. " +
+                "Sube tu certificado en Ajustes → Facturación Electrónica.");
         }
 
-        // TODO: Implementar cuando se tenga el archivo .p12
-        // Usando FirmaXadesNet o similar:
-        // var firmador = new FirmaXadesNet(company.ElectronicSignaturePath, company.ElectronicSignaturePassword);
-        // return Task.FromResult(firmador.Firmar(xmlContent));
+        var password = company.ElectronicSignaturePassword ?? "";
 
-        throw new InvalidOperationException(
-            "Firma electrónica no configurada. " +
-            "Por favor sube tu archivo .p12 en Configuración → Facturación Electrónica.");
+        // 1. Cargar certificado .p12
+        X509Certificate2 cert;
+        try
+        {
+            cert = X509CertificateLoader.LoadPkcs12FromFile(
+                company.ElectronicSignaturePath,
+                password,
+                X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet
+            );
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                $"No se pudo cargar el certificado .p12. Verifica la contraseña. Detalle: {ex.Message}");
+        }
+
+        // 2. Preparar documento XML
+        var xmlDoc = new XmlDocument { PreserveWhitespace = true };
+        xmlDoc.LoadXml(xmlContent);
+
+        // 3. Obtener clave privada RSA
+        using var rsa = cert.GetRSAPrivateKey()
+            ?? throw new InvalidOperationException("El certificado no tiene clave privada RSA.");
+
+        // 4. Calcular digest del certificado (SHA1) para XAdES
+        using var sha1 = SHA1.Create();
+        var certRawBytes = cert.RawData;
+        var certDigestBytes = sha1.ComputeHash(certRawBytes);
+        var certDigestB64 = Convert.ToBase64String(certDigestBytes);
+
+        // 5. Construir nodo xades:SignedProperties (requerido por SRI)
+        var now = DateTime.UtcNow;
+        var signingTime = now.ToString("yyyy-MM-ddTHH:mm:ssZ");
+        var signatureId = "Signature" + now.Ticks;
+        var signedPropsId = "SignedProperties" + now.Ticks;
+
+        var xadesNs = "http://uri.etsi.org/01903/v1.3.2#";
+        var signatureNs = "http://www.w3.org/2000/09/xmldsig#";
+
+        // Crear el bloque XAdES como XML
+        var xadesXml = new XmlDocument { PreserveWhitespace = true };
+        var xadesRoot = xadesXml.CreateElement("xades", "QualifyingProperties", xadesNs);
+        xadesRoot.SetAttribute("Target", "#" + signatureId);
+        xadesRoot.SetAttribute("xmlns:xades", xadesNs);
+
+        var signedProps = xadesXml.CreateElement("xades", "SignedProperties", xadesNs);
+        signedProps.SetAttribute("Id", signedPropsId);
+
+        var signedSigProps = xadesXml.CreateElement("xades", "SignedSignatureProperties", xadesNs);
+
+        // SigningTime
+        var sigTimeNode = xadesXml.CreateElement("xades", "SigningTime", xadesNs);
+        sigTimeNode.InnerText = signingTime;
+        signedSigProps.AppendChild(sigTimeNode);
+
+        // SigningCertificate
+        var signingCert = xadesXml.CreateElement("xades", "SigningCertificate", xadesNs);
+        var certNode = xadesXml.CreateElement("xades", "Cert", xadesNs);
+
+        var certDigest = xadesXml.CreateElement("xades", "CertDigest", xadesNs);
+        var digestMethod = xadesXml.CreateElement("ds", "DigestMethod", signatureNs);
+        digestMethod.SetAttribute("Algorithm", "http://www.w3.org/2000/09/xmldsig#sha1");
+        var digestValue = xadesXml.CreateElement("ds", "DigestValue", signatureNs);
+        digestValue.InnerText = certDigestB64;
+        certDigest.AppendChild(digestMethod);
+        certDigest.AppendChild(digestValue);
+
+        var issuerSerial = xadesXml.CreateElement("xades", "IssuerSerial", xadesNs);
+        var issuerName = xadesXml.CreateElement("ds", "X509IssuerName", signatureNs);
+        issuerName.InnerText = cert.Issuer;
+        var serialNumber = xadesXml.CreateElement("ds", "X509SerialNumber", signatureNs);
+        // SRI espera el número de serie como entero decimal
+        serialNumber.InnerText = BigIntegerFromHex(cert.SerialNumber).ToString();
+        issuerSerial.AppendChild(issuerName);
+        issuerSerial.AppendChild(serialNumber);
+
+        certNode.AppendChild(certDigest);
+        certNode.AppendChild(issuerSerial);
+        signingCert.AppendChild(certNode);
+        signedSigProps.AppendChild(signingCert);
+        signedProps.AppendChild(signedSigProps);
+        xadesRoot.AppendChild(signedProps);
+        xadesXml.AppendChild(xadesRoot);
+
+        // 6. Calcular digest de SignedProperties (C14N → SHA1)
+        var c14n = new XmlDsigC14NTransform();
+        c14n.LoadInput(xadesXml);
+        using var spStream = (System.IO.Stream)c14n.GetOutput(typeof(System.IO.Stream));
+        var spDigest = sha1.ComputeHash(spStream);
+        var spDigestB64 = Convert.ToBase64String(spDigest);
+
+        // 7. Calcular digest del documento completo (C14N → SHA1)
+        var docC14n = new XmlDsigC14NTransform();
+        docC14n.LoadInput(xmlDoc);
+        using var docStream = (System.IO.Stream)docC14n.GetOutput(typeof(System.IO.Stream));
+        var docDigest = sha1.ComputeHash(docStream);
+        var docDigestB64 = Convert.ToBase64String(docDigest);
+
+        // 8. Construir SignedInfo
+        var signedInfoXml = $@"<ds:SignedInfo xmlns:ds=""http://www.w3.org/2000/09/xmldsig#"">
+  <ds:CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315""/>
+  <ds:SignatureMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#rsa-sha1""/>
+  <ds:Reference Id=""comprobante-ref-0"" URI="""">
+    <ds:Transforms>
+      <ds:Transform Algorithm=""http://www.w3.org/2000/09/xmldsig#enveloped-signature""/>
+    </ds:Transforms>
+    <ds:DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1""/>
+    <ds:DigestValue>{docDigestB64}</ds:DigestValue>
+  </ds:Reference>
+  <ds:Reference Type=""http://uri.etsi.org/01903#SignedProperties"" URI=""#{signedPropsId}"">
+    <ds:DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1""/>
+    <ds:DigestValue>{spDigestB64}</ds:DigestValue>
+  </ds:Reference>
+</ds:SignedInfo>";
+
+        // 9. Canonicalizar SignedInfo y firmar con RSA-SHA1
+        var siDoc = new XmlDocument { PreserveWhitespace = true };
+        siDoc.LoadXml(signedInfoXml);
+        var siC14n = new XmlDsigC14NTransform();
+        siC14n.LoadInput(siDoc);
+        using var siStream = (System.IO.Stream)siC14n.GetOutput(typeof(System.IO.Stream));
+        var siBytes = ReadStream(siStream);
+        var signatureBytes = rsa.SignData(siBytes, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+        var signatureValueB64 = Convert.ToBase64String(signatureBytes);
+
+        // 10. Codificar certificado completo en Base64
+        var certB64 = Convert.ToBase64String(cert.RawData);
+
+        // 11. Construir nodo ds:Signature completo
+        var signatureBlock = $@"<ds:Signature xmlns:ds=""http://www.w3.org/2000/09/xmldsig#"" Id=""{signatureId}"">
+  {signedInfoXml}
+  <ds:SignatureValue>{signatureValueB64}</ds:SignatureValue>
+  <ds:KeyInfo>
+    <ds:X509Data>
+      <ds:X509Certificate>{certB64}</ds:X509Certificate>
+    </ds:X509Data>
+  </ds:KeyInfo>
+  <ds:Object>
+    <xades:QualifyingProperties xmlns:xades=""http://uri.etsi.org/01903/v1.3.2#"" Target=""#{signatureId}"">
+      <xades:SignedProperties Id=""{signedPropsId}"">
+        <xades:SignedSignatureProperties>
+          <xades:SigningTime>{signingTime}</xades:SigningTime>
+          <xades:SigningCertificate>
+            <xades:Cert>
+              <xades:CertDigest>
+                <ds:DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1""/>
+                <ds:DigestValue>{certDigestB64}</ds:DigestValue>
+              </xades:CertDigest>
+              <xades:IssuerSerial>
+                <ds:X509IssuerName>{EscapeXml(cert.Issuer)}</ds:X509IssuerName>
+                <ds:X509SerialNumber>{BigIntegerFromHex(cert.SerialNumber)}</ds:X509SerialNumber>
+              </xades:IssuerSerial>
+            </xades:Cert>
+          </xades:SigningCertificate>
+        </xades:SignedSignatureProperties>
+      </xades:SignedProperties>
+    </xades:QualifyingProperties>
+  </ds:Object>
+</ds:Signature>";
+
+        // 12. Insertar firma en el documento XML original
+        var sigDoc = new XmlDocument { PreserveWhitespace = true };
+        sigDoc.LoadXml(signatureBlock);
+        var importedSig = xmlDoc.ImportNode(sigDoc.DocumentElement!, true);
+        xmlDoc.DocumentElement!.AppendChild(importedSig);
+
+        return Task.FromResult(xmlDoc.OuterXml);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // HELPERS DE FIRMA
+    // ─────────────────────────────────────────────────────────
+
+    /// <summary>Convierte número de serie hexadecimal del certificado a decimal (BigInteger), como requiere el SRI.</summary>
+    private static System.Numerics.BigInteger BigIntegerFromHex(string? hex)
+    {
+        if (string.IsNullOrEmpty(hex)) return 0;
+        // Prepend 00 to ensure positive BigInteger
+        return System.Numerics.BigInteger.Parse("00" + hex,
+            System.Globalization.NumberStyles.HexNumber);
+    }
+
+    private static byte[] ReadStream(System.IO.Stream stream)
+    {
+        using var ms = new System.IO.MemoryStream();
+        stream.CopyTo(ms);
+        return ms.ToArray();
     }
 
     // ─────────────────────────────────────────────────────────
