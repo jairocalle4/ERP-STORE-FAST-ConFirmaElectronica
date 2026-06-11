@@ -123,6 +123,7 @@ public class ElectronicBillingController : ControllerBase
             using (var stream = new FileStream(tempPath, FileMode.Create))
                 await request.File.CopyToAsync(stream);
 
+            byte[] certBytes;
             try
             {
                 // Usar X509CertificateLoader de .NET 9
@@ -135,27 +136,24 @@ public class ElectronicBillingController : ControllerBase
                 {
                     return BadRequest($"La firma electrónica está fuera de su período de validez. Válida desde: {cert.NotBefore} hasta {cert.NotAfter}");
                 }
+                
+                // Si es válido, leer todos los bytes
+                certBytes = await System.IO.File.ReadAllBytesAsync(tempPath);
             }
             catch (Exception ex)
             {
                 return BadRequest($"La contraseña de la firma es incorrecta o el archivo .p12 está dañado. Detalle: {ex.Message}");
             }
 
-            // Si es válido, guardar en la carpeta signatures con ruta absoluta estable
-            var baseDir = AppContext.BaseDirectory;
-            var folder = Path.Combine(baseDir, "private", "signatures");
-            Directory.CreateDirectory(folder);
-            var filePath = Path.Combine(folder, $"signature_{company.Ruc}.p12");
-
-            System.IO.File.Copy(tempPath, filePath, overwrite: true);
-
-            company.ElectronicSignaturePath = filePath;
+            // Guardar los bytes en la base de datos
+            company.ElectronicSignatureFile = certBytes;
+            company.ElectronicSignaturePath = null; // Limpiar la ruta antigua si existía
             if (!string.IsNullOrEmpty(request.Password))
                 company.ElectronicSignaturePassword = request.Password;
 
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Firma electrónica cargada y verificada exitosamente", path = filePath });
+            return Ok(new { message = "Firma electrónica cargada y verificada exitosamente en la base de datos." });
         }
         finally
         {
@@ -205,8 +203,7 @@ public class ElectronicBillingController : ControllerBase
             SriEstablishment = company.SriEstablishment,
             SriPointOfIssue = company.SriPointOfIssue,
             IvaRate = company.IvaRate,
-            HasSignature = !string.IsNullOrEmpty(company.ElectronicSignaturePath) &&
-                           System.IO.File.Exists(company.ElectronicSignaturePath)
+            HasSignature = company.ElectronicSignatureFile != null && company.ElectronicSignatureFile.Length > 0
         });
     }
 

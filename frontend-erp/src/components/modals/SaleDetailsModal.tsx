@@ -375,7 +375,10 @@ ${!isElectronic ? `<div class="pban">⚠ <b>DOCUMENTO INTERNO — NO VÁLIDO COM
     };
 
     return createPortal(
-        <div className="fixed inset-0 z-[100] overflow-y-auto bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+        <div 
+            className="fixed inset-0 z-[100] overflow-y-auto bg-slate-900/60 backdrop-blur-sm animate-fade-in"
+            onClick={onClose}
+        >
             {/* Wrapper to ensure centering */}
             <div className="flex min-h-screen items-center justify-center p-4 sm:p-6 text-center">
                 <div

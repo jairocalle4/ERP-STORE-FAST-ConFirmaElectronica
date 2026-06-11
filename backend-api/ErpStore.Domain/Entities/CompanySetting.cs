@@ -36,8 +36,11 @@ public class CompanySetting : BaseEntity
     /// <summary>Punto de emisión SRI (ej. '001').</summary>
     public string? SriPointOfIssue { get; set; } = "001";
 
-    /// <summary>Ruta interna del archivo .p12 de firma electrónica.</summary>
+    /// <summary>Ruta interna del archivo .p12 de firma electrónica (obsoleto, se usa ElectronicSignatureFile).</summary>
     public string? ElectronicSignaturePath { get; set; }
+
+    /// <summary>Contenido binario del archivo .p12 de firma electrónica.</summary>
+    public byte[]? ElectronicSignatureFile { get; set; }
 
     /// <summary>Contraseña del archivo .p12 (almacenada en texto; en producción usar cifrado).</summary>
     public string? ElectronicSignaturePassword { get; set; }

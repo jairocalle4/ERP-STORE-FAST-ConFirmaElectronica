@@ -174,7 +174,7 @@ export default function SalesHistoryPage() {
                                                 >
                                                     <Printer size={18} />
                                                 </button>
-                                                {(sale as any).isElectronic && (
+                                                {(sale as any).isElectronic && (sale as any).electronicStatus === 'AUTORIZADO' && (
                                                     <>
                                                         <button
                                                             onClick={() => electronicBillingService.descargarXml(sale.id, sale.noteNumber || String(sale.id))}

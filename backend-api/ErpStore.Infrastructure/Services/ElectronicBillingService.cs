@@ -353,22 +353,21 @@ public class ElectronicBillingService : IElectronicBillingService
     /// </summary>
     private Task<string> FirmarXml(string xmlContent, CompanySetting company)
     {
-        if (string.IsNullOrEmpty(company.ElectronicSignaturePath) ||
-            !File.Exists(company.ElectronicSignaturePath))
+        if (company.ElectronicSignatureFile == null || company.ElectronicSignatureFile.Length == 0)
         {
             throw new InvalidOperationException(
-                "Firma electrónica: archivo .p12 no encontrado. " +
+                "Firma electrónica: archivo .p12 no encontrado en la base de datos. " +
                 "Sube tu certificado en Ajustes → Facturación Electrónica.");
         }
 
         var password = company.ElectronicSignaturePassword ?? "";
 
-        // 1. Cargar certificado .p12
+        // 1. Cargar certificado .p12 desde los bytes en la base de datos
         X509Certificate2 cert;
         try
         {
-            cert = X509CertificateLoader.LoadPkcs12FromFile(
-                company.ElectronicSignaturePath,
+            cert = X509CertificateLoader.LoadPkcs12(
+                company.ElectronicSignatureFile,
                 password,
                 X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet
             );
