@@ -466,13 +466,24 @@ public class ElectronicBillingService : IElectronicBillingService
         // Crear un documento nuevo con solo el nodo SignedProperties para que el C14N coincida con SRI
         spTempDoc.LoadXml(((XmlElement)signedProps).OuterXml);
         
-        // Agregar el namespace al nodo raíz (SignedProperties) ya que lo hereda de xadesRoot
+        // Agregar los namespaces al nodo raíz (SignedProperties) ya que los hereda en el documento final.
+        // Si no los agregamos al nivel raíz aquí, C14N los pondrá en los nodos hijos, cambiando el hash final.
         if (spTempDoc.DocumentElement!.Attributes["xmlns:xades"] == null)
         {
             var nsAttr = spTempDoc.CreateAttribute("xmlns:xades");
             nsAttr.Value = xadesNs;
             spTempDoc.DocumentElement.Attributes.Append(nsAttr);
         }
+        if (spTempDoc.DocumentElement!.Attributes["xmlns:ds"] == null)
+        {
+            var dsAttr = spTempDoc.CreateAttribute("xmlns:ds");
+            dsAttr.Value = signatureNs;
+            spTempDoc.DocumentElement.Attributes.Append(dsAttr);
+        }
+        
+        // Asegurarnos de limpiar cualquier declaración redundante en nodos hijos para que C14N sea exacto
+        var cleanXml = spTempDoc.OuterXml.Replace($" xmlns:ds=\"{signatureNs}\"", "").Replace($"<xades:SignedProperties", $"<xades:SignedProperties xmlns:ds=\"{signatureNs}\"");
+        spTempDoc.LoadXml(cleanXml);
 
         var spC14n = new XmlDsigC14NTransform();
         spC14n.LoadInput(spTempDoc);
