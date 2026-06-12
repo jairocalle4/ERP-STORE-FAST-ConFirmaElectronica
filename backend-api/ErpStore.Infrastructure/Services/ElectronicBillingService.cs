@@ -453,9 +453,16 @@ public class ElectronicBillingService : IElectronicBillingService
         var spDigest = sha1.ComputeHash(spStream);
         var spDigestB64 = Convert.ToBase64String(spDigest);
 
-        // 7. Calcular digest del documento completo (C14N → SHA1)
+        // 7. Calcular digest del nodo comprobante (C14N → SHA1)
         var docC14n = new XmlDsigC14NTransform();
-        docC14n.LoadInput(xmlDoc);
+        var comprobanteNode = xmlDoc.DocumentElement; // El nodo raíz <factura>
+        
+        // Crear un documento nuevo temporal solo con el nodo factura para el hash
+        // Esto asegura que el C14N sea estricto con el URI="#comprobante"
+        var tempDoc = new XmlDocument { PreserveWhitespace = true };
+        tempDoc.LoadXml(comprobanteNode!.OuterXml);
+        
+        docC14n.LoadInput(tempDoc);
         using var docStream = (System.IO.Stream)docC14n.GetOutput(typeof(System.IO.Stream));
         var docDigest = sha1.ComputeHash(docStream);
         var docDigestB64 = Convert.ToBase64String(docDigest);
