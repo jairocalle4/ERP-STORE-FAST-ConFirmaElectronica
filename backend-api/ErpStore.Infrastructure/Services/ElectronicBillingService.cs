@@ -523,7 +523,7 @@ public class ElectronicBillingService : IElectronicBillingService
         // 10. Codificar certificado completo en Base64
         var certB64 = Convert.ToBase64String(cert.RawData);
 
-        // 11. Construir nodo ds:Signature completo
+        // 11. Construir nodo ds:Signature completo usando el reversedIssuer para que coincida con el hash
         var signatureBlock = $@"<ds:Signature xmlns:ds=""http://www.w3.org/2000/09/xmldsig#"" Id=""{signatureId}"">
   {signedInfoXml}
   <ds:SignatureValue>{signatureValueB64}</ds:SignatureValue>
@@ -544,7 +544,7 @@ public class ElectronicBillingService : IElectronicBillingService
                 <ds:DigestValue>{certDigestB64}</ds:DigestValue>
               </xades:CertDigest>
               <xades:IssuerSerial>
-                <ds:X509IssuerName>{EscapeXml(cert.Issuer)}</ds:X509IssuerName>
+                <ds:X509IssuerName>{EscapeXml(reversedIssuer)}</ds:X509IssuerName>
                 <ds:X509SerialNumber>{BigIntegerFromHex(cert.SerialNumber)}</ds:X509SerialNumber>
               </xades:IssuerSerial>
             </xades:Cert>
