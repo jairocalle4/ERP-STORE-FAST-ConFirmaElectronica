@@ -61,8 +61,11 @@ public class ElectronicBillingService : IElectronicBillingService
             var secuencial = await ObtenerSiguienteSecuencial(company);
             var ambiente = company.SriEnvironment ?? "1";
 
-            // 2. Generar clave de acceso
-            var claveAcceso = GenerarClaveAcceso(sale.Date, "01", company.Ruc, ambiente,
+            // 2. Generar clave de acceso y asegurar RUC de 13 dígitos
+            var rucEmpresa = company.Ruc ?? "";
+            if (rucEmpresa.Length == 10) rucEmpresa += "001";
+            
+            var claveAcceso = GenerarClaveAcceso(sale.Date, "01", rucEmpresa, ambiente,
                 company.SriEstablishment ?? "001", company.SriPointOfIssue ?? "001", secuencial);
 
             // 3. Actualizar venta con datos FE preliminares
@@ -73,7 +76,7 @@ public class ElectronicBillingService : IElectronicBillingService
             await _context.SaveChangesAsync();
 
             // 4. Generar XML sin firma
-            var xmlContent = GenerarXmlInterno(sale, company, claveAcceso, secuencial, ambiente);
+            var xmlContent = GenerarXmlInterno(sale, company, claveAcceso, secuencial, ambiente, rucEmpresa);
 
             // 5. Firmar XML con .p12
             string xmlFirmado;
