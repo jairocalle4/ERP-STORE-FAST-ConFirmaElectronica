@@ -28,8 +28,9 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({ isOpen, onClose, sa
         try {
             const result = await electronicBillingService.emitirFactura(sale.id);
             if (result.success) {
-                addNotification('¡Factura emitida y autorizada con éxito!', 'success');
-                setTimeout(() => window.location.reload(), 1500);
+                addNotification('¡Factura emitida y autorizada con éxito! 🎉', 'success');
+                if (onVoid) onVoid(); // Refresca la tabla de ventas de fondo sin recargar la página
+                setTimeout(() => onClose(), 2000); // Cierra el modal suavemente después de 2 segundos
             } else {
                 addNotification(`Fallo al emitir la factura: ${result.errorMessage}`, 'error');
             }
