@@ -439,7 +439,13 @@ public class ElectronicBillingService : IElectronicBillingService
 
         var issuerSerial = xadesXml.CreateElement("xades", "IssuerSerial", xadesNs);
         var issuerName = xadesXml.CreateElement("ds", "X509IssuerName", signatureNs);
-        issuerName.InnerText = cert.Issuer;
+        
+        // El SRI usa Java, el cual espera el IssuerName en el orden ASN.1 original (C=EC, O=BANCO...). 
+        // .NET por defecto lo invierte (CN=..., L=...). Debemos revertirlo.
+        var issuerParts = cert.Issuer.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
+        Array.Reverse(issuerParts);
+        issuerName.InnerText = string.Join(", ", issuerParts);
+        
         var serialNumber = xadesXml.CreateElement("ds", "X509SerialNumber", signatureNs);
         // SRI espera el número de serie como entero decimal
         serialNumber.InnerText = BigIntegerFromHex(cert.SerialNumber).ToString();
@@ -454,10 +460,22 @@ public class ElectronicBillingService : IElectronicBillingService
         xadesRoot.AppendChild(signedProps);
         xadesXml.AppendChild(xadesRoot);
 
-        // 6. Calcular digest de SignedProperties (C14N → SHA1)
-        var c14n = new XmlDsigC14NTransform();
-        c14n.LoadInput(xadesXml);
-        using var spStream = (System.IO.Stream)c14n.GetOutput(typeof(System.IO.Stream));
+        // 6. Calcular digest de SignedProperties aislando el nodo (C14N → SHA1)
+        var spTempDoc = new XmlDocument { PreserveWhitespace = true };
+        // Crear un documento nuevo con solo el nodo SignedProperties para que el C14N coincida con SRI
+        spTempDoc.LoadXml(((XmlElement)signedProps).OuterXml);
+        
+        // Agregar el namespace al nodo raíz (SignedProperties) ya que lo hereda de xadesRoot
+        if (spTempDoc.DocumentElement!.Attributes["xmlns:xades"] == null)
+        {
+            var nsAttr = spTempDoc.CreateAttribute("xmlns:xades");
+            nsAttr.Value = xadesNs;
+            spTempDoc.DocumentElement.Attributes.Append(nsAttr);
+        }
+
+        var spC14n = new XmlDsigC14NTransform();
+        spC14n.LoadInput(spTempDoc);
+        using var spStream = (System.IO.Stream)spC14n.GetOutput(typeof(System.IO.Stream));
         var spDigest = sha1.ComputeHash(spStream);
         var spDigestB64 = Convert.ToBase64String(spDigest);
 
