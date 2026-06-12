@@ -444,7 +444,8 @@ public class ElectronicBillingService : IElectronicBillingService
         // .NET por defecto lo invierte (CN=..., L=...). Debemos revertirlo.
         var issuerParts = cert.Issuer.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
         Array.Reverse(issuerParts);
-        issuerName.InnerText = string.Join(", ", issuerParts);
+        var reversedIssuer = string.Join(", ", issuerParts);
+        issuerName.InnerText = reversedIssuer;
         
         var serialNumber = xadesXml.CreateElement("ds", "X509SerialNumber", signatureNs);
         // SRI espera el número de serie como entero decimal
