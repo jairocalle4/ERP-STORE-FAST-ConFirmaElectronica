@@ -98,7 +98,7 @@ public class SalesController : ControllerBase
 
             var sale = new Sale
             {
-                Date = DateTime.UtcNow,
+                Date = DateTime.UtcNow.AddHours(-5), // SRI requiere la fecha local de Ecuador (UTC-5)
                 ClientId = dto.ClientId,
                 EmployeeId = userId, // Use the current user's ID
                 Observation = dto.Observation ?? "Venta desde POS",

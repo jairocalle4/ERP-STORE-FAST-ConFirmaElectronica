@@ -184,13 +184,18 @@ public class ElectronicBillingService : IElectronicBillingService
 
         var secuencial = int.TryParse(sale.NoteNumber?.Split('-').LastOrDefault(), out var s) ? s : 1;
         var ambiente = company.SriEnvironment ?? "1";
-        var claveAcceso = sale.AccessKey ?? GenerarClaveAcceso(sale.Date, "01", company.Ruc, ambiente,
+        
+        // El SRI exige estrictamente 13 dígitos para el RUC. Si el usuario ingresó solo su cédula (10 dígitos), añadir '001'.
+        var rucEmpresa = company.Ruc ?? "";
+        if (rucEmpresa.Length == 10) rucEmpresa += "001";
+        
+        var claveAcceso = sale.AccessKey ?? GenerarClaveAcceso(sale.Date, "01", rucEmpresa, ambiente,
             company.SriEstablishment ?? "001", company.SriPointOfIssue ?? "001", secuencial);
 
-        return GenerarXmlInterno(sale, company, claveAcceso, secuencial, ambiente);
+        return GenerarXmlInterno(sale, company, claveAcceso, secuencial, ambiente, rucEmpresa);
     }
 
-    private string GenerarXmlInterno(Sale sale, CompanySetting company, string claveAcceso, int secuencial, string ambiente)
+    private string GenerarXmlInterno(Sale sale, CompanySetting company, string claveAcceso, int secuencial, string ambiente, string rucEmpresa)
     {
         // Determinar datos del comprador
         var (tipoIdComprador, idComprador, razonComprador) = ObtenerDatosComprador(sale.Client);
@@ -237,7 +242,7 @@ public class ElectronicBillingService : IElectronicBillingService
         sb.AppendLine("    <tipoEmision>1</tipoEmision>");
         sb.AppendLine($"    <razonSocial>{EscapeXml(company.SocialReason ?? company.Name)}</razonSocial>");
         sb.AppendLine($"    <nombreComercial>{EscapeXml(company.CommercialName ?? company.Name)}</nombreComercial>");
-        sb.AppendLine($"    <ruc>{company.Ruc}</ruc>");
+        sb.AppendLine($"    <ruc>{rucEmpresa}</ruc>");
         sb.AppendLine($"    <claveAcceso>{claveAcceso}</claveAcceso>");
         sb.AppendLine("    <codDoc>01</codDoc>");
         sb.AppendLine($"    <estab>{(company.SriEstablishment ?? "001").PadLeft(3, '0')}</estab>");
