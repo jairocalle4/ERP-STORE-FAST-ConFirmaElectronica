@@ -464,7 +464,7 @@ public class ElectronicBillingService : IElectronicBillingService
         var signedInfoXml = $@"<ds:SignedInfo xmlns:ds=""http://www.w3.org/2000/09/xmldsig#"">
   <ds:CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315""/>
   <ds:SignatureMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#rsa-sha1""/>
-  <ds:Reference Id=""comprobante-ref-0"" URI="""">
+  <ds:Reference Id=""comprobante-ref-0"" URI=""#comprobante"">
     <ds:Transforms>
       <ds:Transform Algorithm=""http://www.w3.org/2000/09/xmldsig#enveloped-signature""/>
     </ds:Transforms>
