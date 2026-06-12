@@ -359,6 +359,52 @@ public class ElectronicBillingService : IElectronicBillingService
     /// Cumple la Ficha Técnica de Comprobantes Electrónicos SRI Ecuador v2.1.0.
     /// Algoritmos: RSA-SHA1 (firma), SHA1 (digest de referencias), C14N (canonicalización).
     /// </summary>
+    private class XadesSignedXml : SignedXml
+    {
+        public XadesSignedXml(XmlDocument document) : base(document) { }
+        
+        public override XmlElement? GetIdElement(XmlDocument? document, string idValue)
+        {
+            if (document == null) return null;
+            
+            // 1. Intentar con el comportamiento base
+            var element = base.GetIdElement(document, idValue);
+            if (element != null) return element;
+
+            // 2. Intentar buscar por ID de manera manual en el documento principal
+            var nodeList = document.SelectNodes($"//*[@id='{idValue}'] | //*[@Id='{idValue}']");
+            if (nodeList != null && nodeList.Count > 0)
+                return nodeList[0] as XmlElement;
+
+            // 3. Buscar en los DataObjects registrados en este SignedXml
+            foreach (DataObject dataObj in this.Signature.ObjectList)
+            {
+                if (dataObj.Data != null)
+                {
+                    foreach (XmlNode node in dataObj.Data)
+                    {
+                        if (node is XmlElement el)
+                        {
+                            if (el.GetAttribute("Id") == idValue || el.GetAttribute("id") == idValue)
+                                return el;
+
+                            var childList = el.SelectNodes($"//*[@id='{idValue}'] | //*[@Id='{idValue}']");
+                            if (childList != null && childList.Count > 0)
+                                return childList[0] as XmlElement;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Firma el XML con XAdES-BES usando el certificado .p12 del contribuyente.
+    /// Cumple la Ficha Técnica de Comprobantes Electrónicos SRI Ecuador v2.1.0.
+    /// Algoritmos: RSA-SHA1 (firma), SHA1 (digest de referencias), C14N (canonicalización).
+    /// </summary>
     private Task<string> FirmarXml(string xmlContent, CompanySetting company)
     {
         if (company.ElectronicSignatureFile == null || company.ElectronicSignatureFile.Length == 0)
@@ -400,7 +446,6 @@ public class ElectronicBillingService : IElectronicBillingService
         var certDigestBytes = sha1.ComputeHash(certRawBytes);
         var certDigestB64 = Convert.ToBase64String(certDigestBytes);
 
-        // 5. Construir nodo xades:SignedProperties (requerido por SRI)
         var now = DateTime.UtcNow;
         var signingTime = now.ToString("yyyy-MM-ddTHH:mm:ssZ");
         var signatureId = "Signature" + now.Ticks;
@@ -409,191 +454,104 @@ public class ElectronicBillingService : IElectronicBillingService
         var xadesNs = "http://uri.etsi.org/01903/v1.3.2#";
         var signatureNs = "http://www.w3.org/2000/09/xmldsig#";
 
-        // Crear el bloque XAdES como XML
-        var xadesXml = new XmlDocument { PreserveWhitespace = true };
-        var xadesRoot = xadesXml.CreateElement("xades", "QualifyingProperties", xadesNs);
-        xadesRoot.SetAttribute("Target", "#" + signatureId);
-        xadesRoot.SetAttribute("xmlns:xades", xadesNs);
+        // 5. Instanciar SignedXml personalizado
+        var signedXml = new XadesSignedXml(xmlDoc);
+        signedXml.SigningKey = rsa;
+        signedXml.Signature!.Id = signatureId;
+        signedXml.SignedInfo!.SignatureMethod = "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
+        signedXml.SignedInfo!.CanonicalizationMethod = "http://www.w3.org/TR/2001/REC-xml-c14n-20010315";
 
-        var signedProps = xadesXml.CreateElement("xades", "SignedProperties", xadesNs);
-        signedProps.SetAttribute("Id", signedPropsId);
+        // 6. Construir nodo xades:QualifyingProperties
+        var qualifyingProperties = xmlDoc.CreateElement("xades", "QualifyingProperties", xadesNs);
+        qualifyingProperties.SetAttribute("Target", "#" + signatureId);
+        qualifyingProperties.SetAttribute("xmlns:xades", xadesNs);
 
-        var signedSigProps = xadesXml.CreateElement("xades", "SignedSignatureProperties", xadesNs);
+        var signedProperties = xmlDoc.CreateElement("xades", "SignedProperties", xadesNs);
+        signedProperties.SetAttribute("Id", signedPropsId);
 
-        // SigningTime
-        var sigTimeNode = xadesXml.CreateElement("xades", "SigningTime", xadesNs);
-        sigTimeNode.InnerText = signingTime;
-        signedSigProps.AppendChild(sigTimeNode);
+        var signedSignatureProperties = xmlDoc.CreateElement("xades", "SignedSignatureProperties", xadesNs);
 
-        // SigningCertificate
-        var signingCert = xadesXml.CreateElement("xades", "SigningCertificate", xadesNs);
-        var certNode = xadesXml.CreateElement("xades", "Cert", xadesNs);
+        var signingTimeNode = xmlDoc.CreateElement("xades", "SigningTime", xadesNs);
+        signingTimeNode.InnerText = signingTime;
+        signedSignatureProperties.AppendChild(signingTimeNode);
 
-        var certDigest = xadesXml.CreateElement("xades", "CertDigest", xadesNs);
-        var digestMethod = xadesXml.CreateElement("ds", "DigestMethod", signatureNs);
+        var signingCertificate = xmlDoc.CreateElement("xades", "SigningCertificate", xadesNs);
+        var certNode = xmlDoc.CreateElement("xades", "Cert", xadesNs);
+
+        var certDigest = xmlDoc.CreateElement("xades", "CertDigest", xadesNs);
+        var digestMethod = xmlDoc.CreateElement("ds", "DigestMethod", signatureNs);
         digestMethod.SetAttribute("Algorithm", "http://www.w3.org/2000/09/xmldsig#sha1");
-        var digestValue = xadesXml.CreateElement("ds", "DigestValue", signatureNs);
+        var digestValue = xmlDoc.CreateElement("ds", "DigestValue", signatureNs);
         digestValue.InnerText = certDigestB64;
         certDigest.AppendChild(digestMethod);
         certDigest.AppendChild(digestValue);
 
-        var issuerSerial = xadesXml.CreateElement("xades", "IssuerSerial", xadesNs);
-        var issuerName = xadesXml.CreateElement("ds", "X509IssuerName", signatureNs);
+        var issuerSerial = xmlDoc.CreateElement("xades", "IssuerSerial", xadesNs);
+        var issuerName = xmlDoc.CreateElement("ds", "X509IssuerName", signatureNs);
         
-        // El SRI usa Java, el cual espera el IssuerName en el orden ASN.1 original (C=EC, O=BANCO...). 
-        // .NET por defecto lo invierte (CN=..., L=...). Debemos revertirlo.
         var issuerParts = cert.Issuer.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
         Array.Reverse(issuerParts);
         var reversedIssuer = string.Join(", ", issuerParts);
         issuerName.InnerText = reversedIssuer;
         
-        var serialNumber = xadesXml.CreateElement("ds", "X509SerialNumber", signatureNs);
-        // SRI espera el número de serie como entero decimal
+        var serialNumber = xmlDoc.CreateElement("ds", "X509SerialNumber", signatureNs);
         serialNumber.InnerText = BigIntegerFromHex(cert.SerialNumber).ToString();
+        
         issuerSerial.AppendChild(issuerName);
         issuerSerial.AppendChild(serialNumber);
 
         certNode.AppendChild(certDigest);
         certNode.AppendChild(issuerSerial);
-        signingCert.AppendChild(certNode);
-        signedSigProps.AppendChild(signingCert);
-        signedProps.AppendChild(signedSigProps);
-        xadesRoot.AppendChild(signedProps);
-        xadesXml.AppendChild(xadesRoot);
+        signingCertificate.AppendChild(certNode);
+        signedSignatureProperties.AppendChild(signingCertificate);
+        signedProperties.AppendChild(signedSignatureProperties);
+        qualifyingProperties.AppendChild(signedProperties);
 
-        // 6. Calcular digest de SignedProperties aislando el nodo (C14N → SHA1)
-        var spTempDoc = new XmlDocument { PreserveWhitespace = true };
-        // Crear un documento nuevo con solo el nodo SignedProperties para que el C14N coincida con SRI
-        spTempDoc.LoadXml(((XmlElement)signedProps).OuterXml);
-        
-        // Agregar los namespaces al nodo raíz (SignedProperties) ya que los hereda en el documento final.
-        // Si no los agregamos al nivel raíz aquí, C14N los pondrá en los nodos hijos, cambiando el hash final.
-        if (spTempDoc.DocumentElement!.Attributes["xmlns:xades"] == null)
-        {
-            var nsAttr = spTempDoc.CreateAttribute("xmlns:xades");
-            nsAttr.Value = xadesNs;
-            spTempDoc.DocumentElement.Attributes.Append(nsAttr);
-        }
-        if (spTempDoc.DocumentElement!.Attributes["xmlns:ds"] == null)
-        {
-            var dsAttr = spTempDoc.CreateAttribute("xmlns:ds");
-            dsAttr.Value = signatureNs;
-            spTempDoc.DocumentElement.Attributes.Append(dsAttr);
-        }
-        
-        // Asegurarnos de limpiar cualquier declaración redundante en nodos hijos para que C14N sea exacto
-        var cleanXml = spTempDoc.OuterXml.Replace($" xmlns:ds=\"{signatureNs}\"", "").Replace($"<xades:SignedProperties", $"<xades:SignedProperties xmlns:ds=\"{signatureNs}\"");
-        spTempDoc.LoadXml(cleanXml);
-
-        var spC14n = new XmlDsigC14NTransform();
-        spC14n.LoadInput(spTempDoc);
-        using var spStream = (System.IO.Stream)spC14n.GetOutput(typeof(System.IO.Stream));
-        var spDigest = sha1.ComputeHash(spStream);
-        var spDigestB64 = Convert.ToBase64String(spDigest);
-
-        // 7. Calcular digest del nodo comprobante (C14N → SHA1)
-        var docC14n = new XmlDsigC14NTransform();
-        var comprobanteNode = xmlDoc.DocumentElement; // El nodo raíz <factura>
-        
-        // Crear un documento nuevo temporal solo con el nodo factura para el hash
-        // Esto asegura que el C14N sea estricto con el URI="#comprobante"
+        // 7. Envolver QualifyingProperties en un ds:Object
+        var dataObject = new DataObject();
         var tempDoc = new XmlDocument { PreserveWhitespace = true };
-        tempDoc.LoadXml(comprobanteNode!.OuterXml);
-        
-        docC14n.LoadInput(tempDoc);
-        using var docStream = (System.IO.Stream)docC14n.GetOutput(typeof(System.IO.Stream));
-        var docDigest = sha1.ComputeHash(docStream);
-        var docDigestB64 = Convert.ToBase64String(docDigest);
+        tempDoc.AppendChild(tempDoc.ImportNode(qualifyingProperties, true));
+        dataObject.Data = tempDoc.ChildNodes;
+        signedXml.AddObject(dataObject);
 
-        // 8. Construir SignedInfo
-        var signedInfoXml = $@"<ds:SignedInfo xmlns:ds=""http://www.w3.org/2000/09/xmldsig#"">
-  <ds:CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315""/>
-  <ds:SignatureMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#rsa-sha1""/>
-  <ds:Reference Id=""comprobante-ref-0"" URI=""#comprobante"">
-    <ds:Transforms>
-      <ds:Transform Algorithm=""http://www.w3.org/2000/09/xmldsig#enveloped-signature""/>
-    </ds:Transforms>
-    <ds:DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1""/>
-    <ds:DigestValue>{docDigestB64}</ds:DigestValue>
-  </ds:Reference>
-  <ds:Reference Type=""http://uri.etsi.org/01903#SignedProperties"" URI=""#{signedPropsId}"">
-    <ds:DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1""/>
-    <ds:DigestValue>{spDigestB64}</ds:DigestValue>
-  </ds:Reference>
-</ds:SignedInfo>";
+        // 8. Crear Referencia al documento principal (#comprobante)
+        var referenceDoc = new Reference();
+        referenceDoc.Uri = "#comprobante";
+        referenceDoc.DigestMethod = "http://www.w3.org/2000/09/xmldsig#sha1";
+        referenceDoc.AddTransform(new XmlDsigEnvelopedSignatureTransform());
+        referenceDoc.AddTransform(new XmlDsigC14NTransform()); // Usar Rec-xml-c14n-20010315
+        signedXml.AddReference(referenceDoc);
 
-        // 9. Canonicalizar SignedInfo y firmar con RSA-SHA1
-        var siDoc = new XmlDocument { PreserveWhitespace = true };
-        siDoc.LoadXml(signedInfoXml);
-        var siC14n = new XmlDsigC14NTransform();
-        siC14n.LoadInput(siDoc);
-        using var siStream = (System.IO.Stream)siC14n.GetOutput(typeof(System.IO.Stream));
-        var siBytes = ReadStream(siStream);
-        var signatureBytes = rsa.SignData(siBytes, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
-        var signatureValueB64 = Convert.ToBase64String(signatureBytes);
+        // 9. Crear Referencia a SignedProperties
+        var referenceProps = new Reference();
+        referenceProps.Uri = "#" + signedPropsId;
+        referenceProps.Type = "http://uri.etsi.org/01903#SignedProperties";
+        referenceProps.DigestMethod = "http://www.w3.org/2000/09/xmldsig#sha1";
+        referenceProps.AddTransform(new XmlDsigC14NTransform());
+        signedXml.AddReference(referenceProps);
 
-        // 10. Codificar certificado completo en Base64
-        var certB64 = Convert.ToBase64String(cert.RawData);
+        // 10. Agregar datos del certificado en KeyInfo
+        var keyInfo = new KeyInfo();
+        keyInfo.AddClause(new KeyInfoX509Data(cert));
+        signedXml.KeyInfo = keyInfo;
 
-        // 11. Construir nodo ds:Signature completo usando el reversedIssuer para que coincida con el hash
-        var signatureBlock = $@"<ds:Signature xmlns:ds=""http://www.w3.org/2000/09/xmldsig#"" Id=""{signatureId}"">
-  {signedInfoXml}
-  <ds:SignatureValue>{signatureValueB64}</ds:SignatureValue>
-  <ds:KeyInfo>
-    <ds:X509Data>
-      <ds:X509Certificate>{certB64}</ds:X509Certificate>
-    </ds:X509Data>
-  </ds:KeyInfo>
-  <ds:Object>
-    <xades:QualifyingProperties xmlns:xades=""http://uri.etsi.org/01903/v1.3.2#"" Target=""#{signatureId}"">
-      <xades:SignedProperties Id=""{signedPropsId}"">
-        <xades:SignedSignatureProperties>
-          <xades:SigningTime>{signingTime}</xades:SigningTime>
-          <xades:SigningCertificate>
-            <xades:Cert>
-              <xades:CertDigest>
-                <ds:DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1""/>
-                <ds:DigestValue>{certDigestB64}</ds:DigestValue>
-              </xades:CertDigest>
-              <xades:IssuerSerial>
-                <ds:X509IssuerName>{EscapeXml(reversedIssuer)}</ds:X509IssuerName>
-                <ds:X509SerialNumber>{BigIntegerFromHex(cert.SerialNumber)}</ds:X509SerialNumber>
-              </xades:IssuerSerial>
-            </xades:Cert>
-          </xades:SigningCertificate>
-        </xades:SignedSignatureProperties>
-      </xades:SignedProperties>
-    </xades:QualifyingProperties>
-  </ds:Object>
-</ds:Signature>";
+        // 11. Calcular Firma
+        signedXml.ComputeSignature();
 
-        // 12. Insertar firma en el documento XML original
-        var sigDoc = new XmlDocument { PreserveWhitespace = true };
-        sigDoc.LoadXml(signatureBlock);
-        var importedSig = xmlDoc.ImportNode(sigDoc.DocumentElement!, true);
-        xmlDoc.DocumentElement!.AppendChild(importedSig);
+        // 12. Obtener la representación XML de la firma
+        var xmlSignature = signedXml.GetXml();
+
+        // 13. Insertar firma en el documento XML original
+        xmlDoc.DocumentElement!.AppendChild(xmlDoc.ImportNode(xmlSignature, true));
 
         return Task.FromResult(xmlDoc.OuterXml);
     }
 
-    // ─────────────────────────────────────────────────────────
-    // HELPERS DE FIRMA
-    // ─────────────────────────────────────────────────────────
-
-    /// <summary>Convierte número de serie hexadecimal del certificado a decimal (BigInteger), como requiere el SRI.</summary>
     private static System.Numerics.BigInteger BigIntegerFromHex(string? hex)
     {
         if (string.IsNullOrEmpty(hex)) return 0;
-        // Prepend 00 to ensure positive BigInteger
         return System.Numerics.BigInteger.Parse("00" + hex,
             System.Globalization.NumberStyles.HexNumber);
-    }
-
-    private static byte[] ReadStream(System.IO.Stream stream)
-    {
-        using var ms = new System.IO.MemoryStream();
-        stream.CopyTo(ms);
-        return ms.ToArray();
     }
 
     // ─────────────────────────────────────────────────────────
