@@ -1,12 +1,13 @@
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
-using System.Security.Cryptography.Xml;
 using System.Text;
+using System.Text.Json;
 using System.Xml;
+using ErpStore.Application.DTOs;
 using ErpStore.Application.Interfaces;
 using ErpStore.Domain.Entities;
 using ErpStore.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -23,6 +24,9 @@ public class ElectronicBillingService : IElectronicBillingService
 {
     private readonly AppDbContext _context;
     private readonly ILogger<ElectronicBillingService> _logger;
+    private readonly ISriXmlSigner _xmlSigner;
+    private readonly IConfiguration _configuration;
+    private readonly IHostEnvironment _environment;
 
     // URLs de los Web Services SRI
     private const string URL_RECEPCION_PRUEBAS = "https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline";
@@ -30,10 +34,18 @@ public class ElectronicBillingService : IElectronicBillingService
     private const string URL_RECEPCION_PRODUCCION = "https://cel.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline";
     private const string URL_AUTORIZACION_PRODUCCION = "https://cel.sri.gob.ec/comprobantes-electronicos-ws/AutorizacionComprobantesOffline";
 
-    public ElectronicBillingService(AppDbContext context, ILogger<ElectronicBillingService> logger)
+    public ElectronicBillingService(
+        AppDbContext context,
+        ILogger<ElectronicBillingService> logger,
+        ISriXmlSigner xmlSigner,
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
         _context = context;
         _logger = logger;
+        _xmlSigner = xmlSigner;
+        _configuration = configuration;
+        _environment = environment;
         // QuestPDF license (Community es gratuito para proyectos open source)
         QuestPDF.Settings.License = LicenseType.Community;
     }
@@ -80,9 +92,29 @@ public class ElectronicBillingService : IElectronicBillingService
 
             // 5. Firmar XML con .p12
             string xmlFirmado;
+            SriXmlSignResult signResult;
             try
             {
-                xmlFirmado = await FirmarXml(xmlContent, company);
+                if (company.ElectronicSignatureFile == null || company.ElectronicSignatureFile.Length == 0)
+                {
+                    throw new InvalidOperationException(
+                        "Firma electrónica: archivo .p12 no encontrado en la base de datos. " +
+                        "Sube tu certificado en Ajustes → Facturación Electrónica.");
+                }
+
+                signResult = await _xmlSigner.SignXmlAsync(
+                    xmlContent,
+                    company.ElectronicSignatureFile,
+                    company.ElectronicSignaturePassword);
+
+                if (!signResult.Success || string.IsNullOrWhiteSpace(signResult.SignedXml))
+                {
+                    throw new InvalidOperationException(
+                        $"Firma electrónica: {signResult.ErrorMessage ?? "la validación local de firma falló."}");
+                }
+
+                xmlFirmado = signResult.SignedXml;
+                await GuardarDiagnosticoFirma(saleId, claveAcceso, xmlContent, xmlFirmado, signResult.Validation);
             }
             catch (InvalidOperationException ex) when (ex.Message.Contains("Firma electrónica"))
             {
@@ -196,6 +228,82 @@ public class ElectronicBillingService : IElectronicBillingService
             company.SriEstablishment ?? "001", company.SriPointOfIssue ?? "001", secuencial);
 
         return GenerarXmlInterno(sale, company, claveAcceso, secuencial, ambiente, rucEmpresa);
+    }
+
+    public async Task<SriXmlDebugSignResponseDto> GenerarDiagnosticoFirma(int saleId)
+    {
+        if (!DebeGuardarDiagnosticoFirma())
+            throw new UnauthorizedAccessException("Diagnostico de firma SRI no disponible en este entorno.");
+
+        var sale = await ObtenerVentaCompleta(saleId)
+            ?? throw new InvalidOperationException("Venta no encontrada");
+
+        var company = await _context.CompanySettings.FirstOrDefaultAsync()
+            ?? throw new InvalidOperationException("Configuracion de empresa no encontrada");
+
+        if (company.ElectronicSignatureFile == null || company.ElectronicSignatureFile.Length == 0)
+            throw new InvalidOperationException("Firma electronica: archivo .p12/.pfx no encontrado.");
+
+        var warnings = new List<string> { "Diagnostico local: no se envio ningun XML al SRI." };
+        var ambiente = company.SriEnvironment ?? "1";
+        if (ambiente != "1" && ambiente != "2")
+            warnings.Add("SriEnvironment no es '1' ni '2'; el envio normal usaria endpoints de pruebas por fallback.");
+
+        var secuencial = ObtenerSecuencialParaDiagnostico(sale, company);
+        var rucEmpresa = company.Ruc ?? "";
+        if (rucEmpresa.Length == 10) rucEmpresa += "001";
+
+        var claveAcceso = sale.AccessKey ?? GenerarClaveAcceso(
+            sale.Date,
+            "01",
+            rucEmpresa,
+            ambiente,
+            company.SriEstablishment ?? "001",
+            company.SriPointOfIssue ?? "001",
+            secuencial);
+
+        if (string.IsNullOrWhiteSpace(sale.AccessKey))
+            warnings.Add("La clave de acceso fue generada solo para diagnostico y no fue persistida.");
+
+        var unsignedXml = GenerarXmlInterno(sale, company, claveAcceso, secuencial, ambiente, rucEmpresa);
+        var signResult = await _xmlSigner.SignXmlAsync(
+            unsignedXml,
+            company.ElectronicSignatureFile,
+            company.ElectronicSignaturePassword);
+
+        if (string.IsNullOrWhiteSpace(signResult.SignedXml))
+            throw new InvalidOperationException($"No se pudo generar XML firmado: {signResult.ErrorMessage}");
+
+        if (signResult.Validation?.IsValid != true)
+            warnings.Add(signResult.Validation?.ErrorMessage ?? "La validacion local de la firma no fue exitosa.");
+
+        var diagnosticPath = await GuardarDiagnosticoFirmaDebug(
+            saleId,
+            unsignedXml,
+            signResult.SignedXml,
+            signResult);
+
+        var endpoints = ObtenerEndpointsSri(ambiente);
+
+        return new SriXmlDebugSignResponseDto
+        {
+            SaleId = saleId,
+            Ambiente = ambiente == "2" ? "2 - Produccion" : "1 - Pruebas",
+            EndpointSri = new SriEndpointPreviewDto
+            {
+                Recepcion = endpoints.Recepcion,
+                Autorizacion = endpoints.Autorizacion
+            },
+            ClaveAccesoMasked = MaskAccessKey(claveAcceso),
+            IsValid = signResult.Validation?.IsValid == true,
+            IsKeyInfoReferenced = signResult.Validation?.IsKeyInfoReferenced == true,
+            IsSignedPropertiesReferenced = signResult.Validation?.IsSignedPropertiesReferenced == true,
+            HasSignedDataObjectProperties = signResult.Validation?.HasSignedDataObjectProperties == true,
+            HasDataObjectFormat = signResult.Validation?.HasDataObjectFormat == true,
+            CertificateThumbprintMasked = signResult.CertificateThumbprintMasked,
+            DiagnosticPath = diagnosticPath,
+            Warnings = warnings
+        };
     }
 
     private string GenerarXmlInterno(Sale sale, CompanySetting company, string claveAcceso, int secuencial, string ambiente, string rucEmpresa)
@@ -348,210 +456,6 @@ public class ElectronicBillingService : IElectronicBillingService
         sb.AppendLine("</factura>");
 
         return sb.ToString();
-    }
-
-    // ─────────────────────────────────────────────────────────
-    // FIRMA XML (XAdES-BES con .p12)
-    // ─────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Firma el XML con XAdES-BES usando el certificado .p12 del contribuyente.
-    /// Cumple la Ficha Técnica de Comprobantes Electrónicos SRI Ecuador v2.1.0.
-    /// Algoritmos: RSA-SHA1 (firma), SHA1 (digest de referencias), C14N (canonicalización).
-    /// </summary>
-    private class XadesSignedXml : SignedXml
-    {
-        public XadesSignedXml(XmlDocument document) : base(document) { }
-        
-        public override XmlElement? GetIdElement(XmlDocument? document, string idValue)
-        {
-            if (document == null) return null;
-            
-            // 1. Intentar con el comportamiento base
-            var element = base.GetIdElement(document, idValue);
-            if (element != null) return element;
-
-            // 2. Intentar buscar por ID de manera manual en el documento principal
-            var nodeList = document.SelectNodes($"//*[@id='{idValue}'] | //*[@Id='{idValue}']");
-            if (nodeList != null && nodeList.Count > 0)
-                return nodeList[0] as XmlElement;
-
-            // 3. Buscar en los DataObjects registrados en este SignedXml
-            foreach (DataObject dataObj in this.Signature.ObjectList)
-            {
-                if (dataObj.Data != null)
-                {
-                    foreach (XmlNode node in dataObj.Data)
-                    {
-                        if (node is XmlElement el)
-                        {
-                            if (el.GetAttribute("Id") == idValue || el.GetAttribute("id") == idValue)
-                                return el;
-
-                            var childList = el.SelectNodes($"//*[@id='{idValue}'] | //*[@Id='{idValue}']");
-                            if (childList != null && childList.Count > 0)
-                                return childList[0] as XmlElement;
-                        }
-                    }
-                }
-            }
-
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// Firma el XML con XAdES-BES usando el certificado .p12 del contribuyente.
-    /// Cumple la Ficha Técnica de Comprobantes Electrónicos SRI Ecuador v2.1.0.
-    /// Algoritmos: RSA-SHA1 (firma), SHA1 (digest de referencias), C14N (canonicalización).
-    /// </summary>
-    private Task<string> FirmarXml(string xmlContent, CompanySetting company)
-    {
-        if (company.ElectronicSignatureFile == null || company.ElectronicSignatureFile.Length == 0)
-        {
-            throw new InvalidOperationException(
-                "Firma electrónica: archivo .p12 no encontrado en la base de datos. " +
-                "Sube tu certificado en Ajustes → Facturación Electrónica.");
-        }
-
-        var password = company.ElectronicSignaturePassword ?? "";
-
-        // 1. Cargar certificado .p12 desde los bytes en la base de datos
-        X509Certificate2 cert;
-        try
-        {
-            cert = X509CertificateLoader.LoadPkcs12(
-                company.ElectronicSignatureFile,
-                password,
-                X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet
-            );
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException(
-                $"No se pudo cargar el certificado .p12. Verifica la contraseña. Detalle: {ex.Message}");
-        }
-
-        // 2. Preparar documento XML
-        var xmlDoc = new XmlDocument { PreserveWhitespace = true };
-        xmlDoc.LoadXml(xmlContent);
-
-        // 3. Obtener clave privada RSA
-        using var rsa = cert.GetRSAPrivateKey()
-            ?? throw new InvalidOperationException("El certificado no tiene clave privada RSA.");
-
-        // 4. Calcular digest del certificado (SHA1) para XAdES
-        using var sha1 = SHA1.Create();
-        var certRawBytes = cert.RawData;
-        var certDigestBytes = sha1.ComputeHash(certRawBytes);
-        var certDigestB64 = Convert.ToBase64String(certDigestBytes);
-
-        var now = DateTime.UtcNow;
-        var signingTime = now.ToString("yyyy-MM-ddTHH:mm:ssZ");
-        var signatureId = "Signature" + now.Ticks;
-        var signedPropsId = "SignedProperties" + now.Ticks;
-
-        var xadesNs = "http://uri.etsi.org/01903/v1.3.2#";
-        var signatureNs = "http://www.w3.org/2000/09/xmldsig#";
-
-        // 5. Instanciar SignedXml personalizado
-        var signedXml = new XadesSignedXml(xmlDoc);
-        signedXml.SigningKey = rsa;
-        signedXml.Signature!.Id = signatureId;
-        signedXml.SignedInfo!.SignatureMethod = "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
-        signedXml.SignedInfo!.CanonicalizationMethod = "http://www.w3.org/TR/2001/REC-xml-c14n-20010315";
-
-        // 6. Construir nodo xades:QualifyingProperties
-        var qualifyingProperties = xmlDoc.CreateElement("xades", "QualifyingProperties", xadesNs);
-        qualifyingProperties.SetAttribute("Target", "#" + signatureId);
-        qualifyingProperties.SetAttribute("xmlns:xades", xadesNs);
-
-        var signedProperties = xmlDoc.CreateElement("xades", "SignedProperties", xadesNs);
-        signedProperties.SetAttribute("Id", signedPropsId);
-
-        var signedSignatureProperties = xmlDoc.CreateElement("xades", "SignedSignatureProperties", xadesNs);
-
-        var signingTimeNode = xmlDoc.CreateElement("xades", "SigningTime", xadesNs);
-        signingTimeNode.InnerText = signingTime;
-        signedSignatureProperties.AppendChild(signingTimeNode);
-
-        var signingCertificate = xmlDoc.CreateElement("xades", "SigningCertificate", xadesNs);
-        var certNode = xmlDoc.CreateElement("xades", "Cert", xadesNs);
-
-        var certDigest = xmlDoc.CreateElement("xades", "CertDigest", xadesNs);
-        var digestMethod = xmlDoc.CreateElement("ds", "DigestMethod", signatureNs);
-        digestMethod.SetAttribute("Algorithm", "http://www.w3.org/2000/09/xmldsig#sha1");
-        var digestValue = xmlDoc.CreateElement("ds", "DigestValue", signatureNs);
-        digestValue.InnerText = certDigestB64;
-        certDigest.AppendChild(digestMethod);
-        certDigest.AppendChild(digestValue);
-
-        var issuerSerial = xmlDoc.CreateElement("xades", "IssuerSerial", xadesNs);
-        var issuerName = xmlDoc.CreateElement("ds", "X509IssuerName", signatureNs);
-        
-        var issuerParts = cert.Issuer.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
-        Array.Reverse(issuerParts);
-        var reversedIssuer = string.Join(", ", issuerParts);
-        issuerName.InnerText = reversedIssuer;
-        
-        var serialNumber = xmlDoc.CreateElement("ds", "X509SerialNumber", signatureNs);
-        serialNumber.InnerText = BigIntegerFromHex(cert.SerialNumber).ToString();
-        
-        issuerSerial.AppendChild(issuerName);
-        issuerSerial.AppendChild(serialNumber);
-
-        certNode.AppendChild(certDigest);
-        certNode.AppendChild(issuerSerial);
-        signingCertificate.AppendChild(certNode);
-        signedSignatureProperties.AppendChild(signingCertificate);
-        signedProperties.AppendChild(signedSignatureProperties);
-        qualifyingProperties.AppendChild(signedProperties);
-
-        // 7. Envolver QualifyingProperties en un ds:Object
-        var dataObject = new DataObject();
-        var tempDoc = new XmlDocument { PreserveWhitespace = true };
-        tempDoc.AppendChild(tempDoc.ImportNode(qualifyingProperties, true));
-        dataObject.Data = tempDoc.ChildNodes;
-        signedXml.AddObject(dataObject);
-
-        // 8. Crear Referencia al documento principal (#comprobante)
-        var referenceDoc = new Reference();
-        referenceDoc.Uri = "#comprobante";
-        referenceDoc.DigestMethod = "http://www.w3.org/2000/09/xmldsig#sha1";
-        referenceDoc.AddTransform(new XmlDsigEnvelopedSignatureTransform());
-        referenceDoc.AddTransform(new XmlDsigC14NTransform()); // Usar Rec-xml-c14n-20010315
-        signedXml.AddReference(referenceDoc);
-
-        // 9. Crear Referencia a SignedProperties
-        var referenceProps = new Reference();
-        referenceProps.Uri = "#" + signedPropsId;
-        referenceProps.Type = "http://uri.etsi.org/01903#SignedProperties";
-        referenceProps.DigestMethod = "http://www.w3.org/2000/09/xmldsig#sha1";
-        referenceProps.AddTransform(new XmlDsigC14NTransform());
-        signedXml.AddReference(referenceProps);
-
-        // 10. Agregar datos del certificado en KeyInfo
-        var keyInfo = new KeyInfo();
-        keyInfo.AddClause(new KeyInfoX509Data(cert));
-        signedXml.KeyInfo = keyInfo;
-
-        // 11. Calcular Firma
-        signedXml.ComputeSignature();
-
-        // 12. Obtener la representación XML de la firma
-        var xmlSignature = signedXml.GetXml();
-
-        // 13. Insertar firma en el documento XML original
-        xmlDoc.DocumentElement!.AppendChild(xmlDoc.ImportNode(xmlSignature, true));
-
-        return Task.FromResult(xmlDoc.OuterXml);
-    }
-
-    private static System.Numerics.BigInteger BigIntegerFromHex(string? hex)
-    {
-        if (string.IsNullOrEmpty(hex)) return 0;
-        return System.Numerics.BigInteger.Parse("00" + hex,
-            System.Globalization.NumberStyles.HexNumber);
     }
 
     // ─────────────────────────────────────────────────────────
@@ -938,6 +842,123 @@ public class ElectronicBillingService : IElectronicBillingService
         var path = Path.Combine(folder, $"{claveAcceso}.xml");
         await File.WriteAllTextAsync(path, xmlContent, Encoding.UTF8);
         return path;
+    }
+
+    private async Task GuardarDiagnosticoFirma(
+        int saleId,
+        string claveAcceso,
+        string unsignedXml,
+        string signedXml,
+        SriXmlSignatureValidationResult? validation)
+    {
+        if (!DebeGuardarDiagnosticoFirma())
+            return;
+
+        var folder = Path.Combine("wwwroot", "electronic-docs", saleId.ToString(), "diagnostics");
+        Directory.CreateDirectory(folder);
+
+        await File.WriteAllTextAsync(
+            Path.Combine(folder, $"{claveAcceso}_unsigned.xml"),
+            unsignedXml,
+            Encoding.UTF8);
+        await File.WriteAllTextAsync(
+            Path.Combine(folder, $"{claveAcceso}_signed.xml"),
+            signedXml,
+            Encoding.UTF8);
+
+        var validationJson = JsonSerializer.Serialize(
+            validation ?? new SriXmlSignatureValidationResult { ErrorMessage = "Validacion no disponible." },
+            new JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(
+            Path.Combine(folder, $"{claveAcceso}_validation.json"),
+            validationJson,
+            Encoding.UTF8);
+
+        _logger.LogInformation(
+            "Diagnostico local de firma SRI guardado para venta {SaleId} y clave {ClaveAcceso}.",
+            saleId,
+            claveAcceso);
+    }
+
+    private async Task<string> GuardarDiagnosticoFirmaDebug(
+        int saleId,
+        string unsignedXml,
+        string signedXml,
+        SriXmlSignResult signResult)
+    {
+        var folder = Path.Combine(
+            "wwwroot",
+            "electronic-docs",
+            saleId.ToString(),
+            "diagnostics",
+            $"debug-{DateTime.UtcNow:yyyyMMddHHmmssfff}");
+        Directory.CreateDirectory(folder);
+
+        await File.WriteAllTextAsync(Path.Combine(folder, "unsigned.xml"), unsignedXml, Encoding.UTF8);
+        await File.WriteAllTextAsync(Path.Combine(folder, "signed.xml"), signedXml, Encoding.UTF8);
+
+        var validationPayload = new
+        {
+            generatedAtUtc = DateTime.UtcNow,
+            signResult.SignatureId,
+            signResult.SignedPropertiesId,
+            signResult.KeyInfoId,
+            signResult.ObjectId,
+            signResult.SignatureMethod,
+            signResult.DigestMethod,
+            signResult.UsesSha1,
+            signResult.CertificateThumbprintMasked,
+            validation = signResult.Validation
+        };
+
+        var validationJson = JsonSerializer.Serialize(
+            validationPayload,
+            new JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(Path.Combine(folder, "_validation.json"), validationJson, Encoding.UTF8);
+
+        var fullPath = Path.GetFullPath(folder);
+        _logger.LogInformation(
+            "Diagnostico debug de firma SRI guardado para venta {SaleId} en {DiagnosticPath}.",
+            saleId,
+            fullPath);
+        return fullPath;
+    }
+
+    private bool DebeGuardarDiagnosticoFirma()
+    {
+        return _environment.IsDevelopment()
+            || LeerBooleanoConfiguracion("SRI_XML_SIGNATURE_DIAGNOSTICS_ENABLED")
+            || LeerBooleanoConfiguracion("Sri:XmlSignatureDiagnosticsEnabled");
+    }
+
+    private bool LeerBooleanoConfiguracion(string key)
+    {
+        return bool.TryParse(_configuration[key], out var enabled) && enabled;
+    }
+
+    private static int ObtenerSecuencialParaDiagnostico(Sale sale, CompanySetting company)
+    {
+        if (int.TryParse(sale.NoteNumber?.Split('-').LastOrDefault(), out var secuencial) && secuencial > 0)
+            return secuencial;
+
+        return company.CurrentSequence + 1;
+    }
+
+    private static (string Recepcion, string Autorizacion) ObtenerEndpointsSri(string ambiente)
+    {
+        return ambiente == "2"
+            ? (URL_RECEPCION_PRODUCCION, URL_AUTORIZACION_PRODUCCION)
+            : (URL_RECEPCION_PRUEBAS, URL_AUTORIZACION_PRUEBAS);
+    }
+
+    private static string MaskAccessKey(string accessKey)
+    {
+        if (string.IsNullOrWhiteSpace(accessKey))
+            return string.Empty;
+
+        return accessKey.Length <= 12
+            ? "****"
+            : $"{accessKey[..6]}...{accessKey[^6..]}";
     }
 
     private static ElectronicBillingResult Error(string mensaje) => new()

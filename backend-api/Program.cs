@@ -25,6 +25,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<ISriXmlSigner, SriXadesBesSigner>();
 builder.Services.AddScoped<IElectronicBillingService, ElectronicBillingService>();
 // Background service: verifica stock bajo cada hora y envía correo automático consolidado
 // Solo se activa si la variable ENABLE_BACKGROUND_SERVICES=true está configurada en Render

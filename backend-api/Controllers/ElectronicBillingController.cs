@@ -60,6 +60,33 @@ public class ElectronicBillingController : ControllerBase
     }
 
     // ──────────────────────────────────────────────────────
+    // POST /api/electronic-billing/debug/sign/{saleId}
+    // Genera XML, firma y valida localmente sin enviar al SRI
+    // ──────────────────────────────────────────────────────
+    [HttpPost("debug/sign/{saleId:int}")]
+    public async Task<ActionResult<SriXmlDebugSignResponseDto>> DiagnosticarFirma(int saleId)
+    {
+        try
+        {
+            var resultado = await _billingService.GenerarDiagnosticoFirma(saleId);
+            return Ok(resultado);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error en diagnostico de firma para venta {SaleId}", saleId);
+            return BadRequest(new { error = "Error generando diagnostico de firma." });
+        }
+    }
+
+    // ──────────────────────────────────────────────────────
     // GET /api/electronic-billing/xml/{saleId}
     // Descarga el XML autorizado de una venta
     // ──────────────────────────────────────────────────────

@@ -1,3 +1,5 @@
+using ErpStore.Application.DTOs;
+
 namespace ErpStore.Application.Interfaces;
 
 /// <summary>
@@ -39,4 +41,10 @@ public interface IElectronicBillingService
     /// Devuelve la ruta del XML autorizado guardado localmente.
     /// </summary>
     Task<string?> ObtenerRutaXml(int saleId);
+
+    /// <summary>
+    /// Genera, firma y valida un XML localmente sin enviarlo al SRI.
+    /// Disponible solo para diagnostico habilitado.
+    /// </summary>
+    Task<SriXmlDebugSignResponseDto> GenerarDiagnosticoFirma(int saleId);
 }
