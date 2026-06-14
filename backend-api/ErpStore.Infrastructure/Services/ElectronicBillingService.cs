@@ -571,7 +571,7 @@ $"            <xades:Cert>\n" +
 $"              <xades:CertDigest>\n" +
 $"                <ds:DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\"/>\n" +
 $"                <ds:DigestValue>{certDigestB64}</ds:DigestValue>\n" +
-$"              </ds:CertDigest>\n" +
+$"              </xades:CertDigest>\n" +
 $"              <xades:IssuerSerial>\n" +
 $"                <ds:X509IssuerName>{EscapeXml(reversedIssuer)}</ds:X509IssuerName>\n" +
 $"                <ds:X509SerialNumber>{BigIntegerFromHex(cert.SerialNumber)}</ds:X509SerialNumber>\n" +
