@@ -416,7 +416,7 @@ public class ElectronicBillingService : IElectronicBillingService
 
         var password = company.ElectronicSignaturePassword ?? "";
 
-        // 1. Cargar certificado .p12 desde los bytes en la base de datos
+        // 1. Cargar certificado .p12
         X509Certificate2 cert;
         try
         {
@@ -433,6 +433,8 @@ public class ElectronicBillingService : IElectronicBillingService
         }
 
         // 2. Preparar documento XML
+        // Normalizar CRLF a LF para evitar divergencias de canonicalización
+        xmlContent = xmlContent.Replace("\r\n", "\n");
         var xmlDoc = new XmlDocument { PreserveWhitespace = true };
         xmlDoc.LoadXml(xmlContent);
 
@@ -440,7 +442,7 @@ public class ElectronicBillingService : IElectronicBillingService
         using var rsa = cert.GetRSAPrivateKey()
             ?? throw new InvalidOperationException("El certificado no tiene clave privada RSA.");
 
-        // 4. Calcular digest del certificado (SHA1) para XAdES
+        // 4. Calcular digest del certificado
         using var sha1 = SHA1.Create();
         var certRawBytes = cert.RawData;
         var certDigestBytes = sha1.ComputeHash(certRawBytes);
@@ -519,7 +521,7 @@ public class ElectronicBillingService : IElectronicBillingService
         referenceDoc.Uri = "#comprobante";
         referenceDoc.DigestMethod = "http://www.w3.org/2000/09/xmldsig#sha1";
         referenceDoc.AddTransform(new XmlDsigEnvelopedSignatureTransform());
-        referenceDoc.AddTransform(new XmlDsigC14NTransform()); // Usar Rec-xml-c14n-20010315
+        // REMOVIDO: XmlDsigC14NTransform para evitar corromper la validación en el SRI
         signedXml.AddReference(referenceDoc);
 
         // 9. Crear Referencia a SignedProperties
@@ -527,7 +529,7 @@ public class ElectronicBillingService : IElectronicBillingService
         referenceProps.Uri = "#" + signedPropsId;
         referenceProps.Type = "http://uri.etsi.org/01903#SignedProperties";
         referenceProps.DigestMethod = "http://www.w3.org/2000/09/xmldsig#sha1";
-        referenceProps.AddTransform(new XmlDsigC14NTransform());
+        // REMOVIDO: XmlDsigC14NTransform para evitar firmas inválidas en el bloque XAdES
         signedXml.AddReference(referenceProps);
 
         // 10. Agregar datos del certificado en KeyInfo
@@ -544,7 +546,24 @@ public class ElectronicBillingService : IElectronicBillingService
         // 13. Insertar firma en el documento XML original
         xmlDoc.DocumentElement!.AppendChild(xmlDoc.ImportNode(xmlSignature, true));
 
-        return Task.FromResult(xmlDoc.OuterXml);
+        // 14. Escribir el XML de salida sin BOM (Byte Order Mark) y sin reformatear
+        var settings = new XmlWriterSettings
+        {
+            Encoding = new UTF8Encoding(false), // Omitir el BOM de UTF-8
+            Indent = false,                     // Mantener el PreserveWhitespace original
+            OmitXmlDeclaration = false
+        };
+
+        using var stringWriter = new Utf8StringWriter();
+        using var xmlWriter = XmlWriter.Create(stringWriter, settings);
+        xmlDoc.Save(xmlWriter);
+        
+        return Task.FromResult(stringWriter.ToString());
+    }
+
+    private class Utf8StringWriter : StringWriter
+    {
+        public override Encoding Encoding => new UTF8Encoding(false);
     }
 
     private static System.Numerics.BigInteger BigIntegerFromHex(string? hex)
