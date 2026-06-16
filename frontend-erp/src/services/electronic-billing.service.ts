@@ -114,4 +114,10 @@ export const electronicBillingService = {
         const response = await api.put('/electronic-billing/settings', settings);
         return response.data;
     },
+
+    /** Reenvía el correo electrónico de la factura al cliente */
+    reenviarCorreo: async (saleId: number | string) => {
+        const response = await api.post(`/electronic-billing/resend-email/${saleId}`);
+        return response.data;
+    },
 };

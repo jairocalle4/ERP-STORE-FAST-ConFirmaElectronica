@@ -16,7 +16,7 @@ public class EmailService : IEmailService
         _context = context;
     }
 
-    public async Task SendEmailAsync(string to, string subject, string body)
+    public async Task SendEmailAsync(string to, string subject, string body, IEnumerable<(string Filename, byte[] Content, string ContentType)> attachments = null)
     {
         var settings = await _context.CompanySettings.AsNoTracking().FirstOrDefaultAsync();
 
@@ -29,7 +29,7 @@ public class EmailService : IEmailService
         var senderEmail = settings.Email ?? "noreply@faststore.ec";
         var senderName = settings.Name ?? "FASTSTORE ERP";
 
-        await SendViaBrevoAsync(settings.BrevoApiKey, senderEmail, senderName, to, subject, body);
+        await SendViaBrevoAsync(settings.BrevoApiKey, senderEmail, senderName, to, subject, body, attachments);
     }
 
     public async Task ProcessLowStockAlertsAsync()
@@ -125,9 +125,19 @@ public class EmailService : IEmailService
         }
     }
 
-    private static async Task SendViaBrevoAsync(string apiKey, string senderEmail, string senderName, string to, string subject, string body)
+    private static async Task SendViaBrevoAsync(string apiKey, string senderEmail, string senderName, string to, string subject, string body, IEnumerable<(string Filename, byte[] Content, string ContentType)> attachments = null)
     {
-        var payload = new { sender = new { name = senderName, email = senderEmail }, to = new[] { new { email = to } }, subject, htmlContent = body };
+        object payload;
+        if (attachments != null && attachments.Any())
+        {
+            var atts = attachments.Select(a => new { name = a.Filename, content = Convert.ToBase64String(a.Content) }).ToArray();
+            payload = new { sender = new { name = senderName, email = senderEmail }, to = new[] { new { email = to } }, subject, htmlContent = body, attachment = atts };
+        }
+        else
+        {
+            payload = new { sender = new { name = senderName, email = senderEmail }, to = new[] { new { email = to } }, subject, htmlContent = body };
+        }
+        
         using var http = new HttpClient();
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.brevo.com/v3/smtp/email") { Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json") };
         request.Headers.Add("api-key", apiKey);

@@ -20,4 +20,11 @@ public class CompanySettingDto
     public string? SmtpPass { get; set; }
     public string? BrevoApiKey { get; set; }
     public string? CoverImageUrl { get; set; }
+    public string? SriEnvironment { get; set; }
+    public string? SriEstablishment { get; set; }
+    public string? SriPointOfIssue { get; set; }
+    public string? TributaryRegime { get; set; }
+    public string? ElectronicSignaturePath { get; set; }
+    public string? ElectronicSignaturePassword { get; set; }
+    public bool ElectronicBillingEnabled { get; set; }
 }

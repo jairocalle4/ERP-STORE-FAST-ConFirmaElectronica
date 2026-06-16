@@ -183,13 +183,6 @@ export default function SalesHistoryPage() {
                                                         >
                                                             <Download size={16} />
                                                         </button>
-                                                        <button
-                                                            onClick={() => electronicBillingService.descargarRide(sale.id, sale.noteNumber || String(sale.id))}
-                                                            className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                                                            title="Descargar RIDE (PDF)"
-                                                        >
-                                                            <FileText size={16} />
-                                                        </button>
                                                     </>
                                                 )}
                                             </div>

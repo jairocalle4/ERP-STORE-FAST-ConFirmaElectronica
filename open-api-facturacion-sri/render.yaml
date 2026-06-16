@@ -1,0 +1,52 @@
+services:
+  - type: redis
+    name: sri-redis
+    plan: free
+    ipAllowList: []
+
+  - type: web
+    name: api-facturacion-sri
+    env: node
+    plan: free
+    region: ohio
+    buildCommand: "npm install && npm run build"
+    startCommand: "npm run start:prod"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: PUBLIC_URL
+        value: https://api-facturacion-sri.onrender.com
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: sri-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: redis
+          name: sri-redis
+          property: port
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: ENCRYPTION_SALT
+        sync: false
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRATION
+        value: "24h"
+      - key: ALLOWED_ORIGINS
+        sync: false

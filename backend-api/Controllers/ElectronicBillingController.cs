@@ -67,21 +67,46 @@ public class ElectronicBillingController : ControllerBase
     public async Task<IActionResult> DescargarXml(int saleId)
     {
         var sale = await _context.Sales.FindAsync(saleId);
-        if (sale == null) return NotFound("Venta no encontrada");
-        if (!sale.IsElectronic) return BadRequest("Esta venta no tiene factura electrónica");
+        if (sale == null || string.IsNullOrEmpty(sale.AccessKey))
+            return NotFound("La venta no existe o no tiene XML generado.");
 
-        // Si hay XML guardado, devolver el archivo
-        if (!string.IsNullOrEmpty(sale.XmlPath) && System.IO.File.Exists(sale.XmlPath))
+        try
         {
-            var bytes = await System.IO.File.ReadAllBytesAsync(sale.XmlPath);
-            var fileName = $"factura_{sale.AccessKey}.xml";
-            return File(bytes, "application/xml", fileName);
-        }
+            // Intentar primero obtener el archivo local
+            var xmlPath = await _billingService.ObtenerRutaXml(saleId);
+            if (!string.IsNullOrEmpty(xmlPath) && System.IO.File.Exists(xmlPath))
+            {
+                var bytes = await System.IO.File.ReadAllBytesAsync(xmlPath);
+                return File(bytes, "application/xml", $"factura_{sale.NoteNumber}.xml");
+            }
 
-        // Sino, generar XML al vuelo
-        var xml = await _billingService.GenerarXml(saleId);
-        var xmlBytes = System.Text.Encoding.UTF8.GetBytes(xml);
-        return File(xmlBytes, "application/xml", $"factura_{sale.NoteNumber}.xml");
+            // Sino, generar XML al vuelo
+            var xml = await _billingService.GenerarXml(saleId);
+            var xmlBytes = System.Text.Encoding.UTF8.GetBytes(xml);
+            return File(xmlBytes, "application/xml", $"factura_{sale.NoteNumber}.xml");
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Error = ex.Message });
+        }
+    }
+
+    // ──────────────────────────────────────────────────────
+    // POST /api/v1/electronic-billing/resend-email/{saleId}
+    // Reenvía el correo de la factura electrónica al cliente
+    // ──────────────────────────────────────────────────────
+    [HttpPost("resend-email/{saleId:int}")]
+    public async Task<IActionResult> ResendEmail(int saleId)
+    {
+        try
+        {
+            var result = await _billingService.SendInvoiceEmailAsync(saleId);
+            return Ok(new { success = result, message = "Correo reenviado exitosamente." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
     }
 
     // ──────────────────────────────────────────────────────

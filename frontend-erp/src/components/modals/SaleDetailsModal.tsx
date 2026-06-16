@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { X, Printer, Calendar, User, Package, Hash, CreditCard, Download, Trash2, FileText, Zap } from 'lucide-react';
+import { X, Printer, Calendar, User, Package, Hash, CreditCard, Download, Trash2, FileText, Zap, Mail } from 'lucide-react';
 import type { Sale } from '../../services/sale.service';
 import { saleService } from '../../services/sale.service';
 import { companyService, type CompanySetting } from '../../services/company.service';
@@ -21,6 +21,7 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({ isOpen, onClose, sa
     const [showConfirmVoid, setShowConfirmVoid] = React.useState(false);
     const [company, setCompany] = React.useState<CompanySetting | null>(null);
     const [isReemitting, setIsReemitting] = React.useState(false);
+    const [isResending, setIsResending] = React.useState(false);
 
     const handleReemit = async () => {
         if (!sale) return;
@@ -40,6 +41,25 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({ isOpen, onClose, sa
             addNotification(`Error al emitir factura: ${serverError}`, 'error');
         } finally {
             setIsReemitting(false);
+        }
+    };
+
+    const handleResendEmail = async () => {
+        if (!sale) return;
+        setIsResending(true);
+        try {
+            const result = await electronicBillingService.reenviarCorreo(sale.id);
+            if (result.success) {
+                addNotification('Correo reenviado exitosamente.', 'success');
+            } else {
+                addNotification(`Error: ${result.message}`, 'error');
+            }
+        } catch (error: any) {
+            console.error(error);
+            const serverError = error?.response?.data?.message || 'Error al reenviar el correo';
+            addNotification(serverError, 'error');
+        } finally {
+            setIsResending(false);
         }
     };
 
@@ -138,11 +158,12 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({ isOpen, onClose, sa
                         * { box-sizing: border-box; }
                         body {
                             font-family: 'Courier New', Courier, monospace;
-                            width: 80mm;
-                            padding: 4mm;
+                            width: 78mm;
+                            max-width: 100%;
                             margin: 0 auto;
-                            font-size: 11px;
-                            line-height: 1.4;
+                            padding: 4mm;
+                            font-size: 12px;
+                            line-height: 1.2;
                             color: #000;
                         }
                         .text-center { text-align: center; }
@@ -309,7 +330,7 @@ td{padding:3px 5px;border-bottom:1px solid #e2e8f0;vertical-align:top}
     <div class="dm"><b>Nº Autorización:</b></div>
     <div style="font-family:monospace;font-size:7px;word-break:break-all;color:#0f172a">${authNumber || '(Pendiente SRI)'}</div>
     <div class="dm"><b>F. Autorización:</b> ${authDate || '(Pendiente)'}</div>
-    <div class="dm"><b>Ambiente:</b> ${isElectronic ? (isAuthorized ? 'PRODUCCIÓN' : 'PRUEBAS') : 'NO CONECTADO'} &nbsp; <b>Emisión:</b> NORMAL</div>
+    <div class="dm"><b>Ambiente:</b> ${isElectronic ? (company?.sriEnvironment === '1' ? 'PRUEBAS' : 'PRODUCCIÓN') : 'NO CONECTADO'} &nbsp; <b>Emisión:</b> NORMAL</div>
     <div class="dm"><b>F. Emisión:</b> ${new Date(sale.date).toLocaleDateString('es-EC')}</div>
   </div>
 </div>
@@ -573,9 +594,9 @@ ${!isElectronic ? `<div class="pban">⚠ <b>DOCUMENTO INTERNO — NO VÁLIDO COM
                                 className="flex-1 py-4 bg-indigo-50 border border-indigo-200 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 text-indigo-700 rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-3 shadow-sm"
                             >
                                 <FileText size={18} />
-                                Factura A4
+                                Imprimir RIDE (A4)
                             </button>
-                            {/* FE: XML & RIDE download buttons if authorized, or Reintentar button if failed/pending */}
+                            {/* FE: XML & Reenviar Correo buttons if authorized, or Reintentar button if failed/pending */}
                             {(sale as any).isElectronic && (
                                 (sale as any).electronicStatus === 'AUTORIZADO' ? (
                                     <>
@@ -588,12 +609,17 @@ ${!isElectronic ? `<div class="pban">⚠ <b>DOCUMENTO INTERNO — NO VÁLIDO COM
                                             XML
                                         </button>
                                         <button
-                                            onClick={() => electronicBillingService.descargarRide(sale.id, sale.noteNumber || String(sale.id))}
-                                            className="px-4 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] transition-all flex items-center gap-2 shadow-lg shadow-purple-200"
-                                            title="Descargar RIDE (PDF SRI)"
+                                            onClick={handleResendEmail}
+                                            disabled={isResending}
+                                            className="px-4 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] transition-all flex items-center gap-2 shadow-lg shadow-emerald-200 disabled:bg-emerald-400"
+                                            title="Reenviar comprobante por correo al cliente"
                                         >
-                                            <FileText size={16} />
-                                            RIDE
+                                            {isResending ? (
+                                                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                                            ) : (
+                                                <Mail size={16} />
+                                            )}
+                                            Reenviar
                                         </button>
                                     </>
                                 ) : (

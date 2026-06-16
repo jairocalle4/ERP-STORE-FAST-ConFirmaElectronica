@@ -13,10 +13,12 @@ namespace ErpStore.Api.Controllers;
 public class CompanySettingsController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly ErpStore.Application.Interfaces.IElectronicBillingService _billingService;
 
-    public CompanySettingsController(AppDbContext context)
+    public CompanySettingsController(AppDbContext context, ErpStore.Application.Interfaces.IElectronicBillingService billingService)
     {
         _context = context;
+        _billingService = billingService;
     }
 
     [AllowAnonymous]
@@ -72,9 +74,26 @@ public class CompanySettingsController : ControllerBase
         settings.SmtpPass = dto.SmtpPass;
         settings.BrevoApiKey = dto.BrevoApiKey;
         settings.CoverImageUrl = dto.CoverImageUrl;
+
+        // SRI Fields
+        settings.SriEnvironment = dto.SriEnvironment;
+        settings.SriEstablishment = dto.SriEstablishment;
+        settings.SriPointOfIssue = dto.SriPointOfIssue;
+        settings.TributaryRegime = dto.TributaryRegime;
+        settings.ElectronicSignaturePath = dto.ElectronicSignaturePath;
+        settings.ElectronicSignaturePassword = dto.ElectronicSignaturePassword;
+        settings.ElectronicBillingEnabled = dto.ElectronicBillingEnabled;
+
         settings.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+        
+        try {
+            await _billingService.SyncConfigurationAsync(settings);
+        } catch (Exception ex) {
+            Console.WriteLine($"Error syncing with NestJS: {ex.Message}");
+        }
+
         return Ok(settings);
     }
 }

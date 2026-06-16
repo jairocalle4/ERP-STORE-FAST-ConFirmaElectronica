@@ -75,10 +75,11 @@ public class SalesController : ControllerBase
                 return BadRequest("Una venta debe tener al menos un producto.");
             }
 
-            // Generate Note Number: 001-001-XXXXXXX
+            // Generate Note Number: V-00000001 (Internal format)
+            // It will be replaced by the SRI sequence when emitted electronically.
             var lastSale = await _context.Sales.OrderByDescending(s => s.Id).FirstOrDefaultAsync();
             int nextNum = (lastSale?.Id ?? 0) + 1;
-            string noteNumber = $"001-001-{nextNum:D8}";
+            string noteNumber = $"V-{nextNum:D8}";
 
             var userId = GetCurrentUserId(); // Helper method to get current user ID
 

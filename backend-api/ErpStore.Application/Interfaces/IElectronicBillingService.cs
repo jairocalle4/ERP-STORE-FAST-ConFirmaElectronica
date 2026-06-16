@@ -21,6 +21,10 @@ public class ElectronicBillingResult
 public interface IElectronicBillingService
 {
     /// <summary>
+    /// Sincroniza la configuración de la empresa con la API de facturación electrónica.
+    /// </summary>
+    Task SyncConfigurationAsync(ErpStore.Domain.Entities.CompanySetting company);
+    /// <summary>
     /// Orquesta el flujo completo: genera XML → firma → envía → consulta autorización → guarda estado.
     /// </summary>
     Task<ElectronicBillingResult> EmitirFactura(int saleId);
@@ -39,4 +43,9 @@ public interface IElectronicBillingService
     /// Devuelve la ruta del XML autorizado guardado localmente.
     /// </summary>
     Task<string?> ObtenerRutaXml(int saleId);
+
+    /// <summary>
+    /// Reenvía el correo de la factura electrónica al cliente (incluyendo el XML adjunto).
+    /// </summary>
+    Task<bool> SendInvoiceEmailAsync(int saleId);
 }
