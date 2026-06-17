@@ -66,7 +66,7 @@ public static class RidePdfGenerator
             {
                 if (logoBytes != null)
                 {
-                    column.Item().Height(80).AlignLeft().Image(logoBytes, ImageScaling.FitArea);
+                    column.Item().Height(80).AlignLeft().Image(logoBytes).FitArea();
                     column.Item().PaddingTop(10);
                 }
 
@@ -239,15 +239,19 @@ public static class RidePdfGenerator
 
                 void DrawTotalRow(string label, string value, bool isTotal = false)
                 {
-                    var cell = table.Cell().Border(1).BorderColor(BorderColor).Padding(5);
-                    if (isTotal) cell.Background(PrimaryColor);
+                    table.Cell().Element(c =>
+                    {
+                        var cont = c.Border(1).BorderColor(BorderColor).Padding(5);
+                        if (isTotal) cont = cont.Background(PrimaryColor);
+                        cont.Text(label).Bold().FontColor(isTotal ? Colors.White : TextColor);
+                    });
                     
-                    cell.Text(label).Bold().FontColor(isTotal ? Colors.White : TextColor);
-                    
-                    var valCell = table.Cell().Border(1).BorderColor(BorderColor).Padding(5).AlignRight();
-                    if (isTotal) valCell.Background(PrimaryColor);
-                    
-                    valCell.Text(value).Bold().FontColor(isTotal ? Colors.White : TextColor);
+                    table.Cell().Element(c =>
+                    {
+                        var cont = c.Border(1).BorderColor(BorderColor).Padding(5).AlignRight();
+                        if (isTotal) cont = cont.Background(PrimaryColor);
+                        cont.Text(value).Bold().FontColor(isTotal ? Colors.White : TextColor);
+                    });
                 }
 
                 DrawTotalRow($"SUBTOTAL {ivaRate}%", $"${subtotal15:F2}");
