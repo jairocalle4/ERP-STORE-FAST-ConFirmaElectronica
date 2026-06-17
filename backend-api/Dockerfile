@@ -18,6 +18,10 @@ RUN dotnet publish "ErpStore.Api.csproj" -c Release -o /app/publish
 # Final stage/image
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
+
+# Instalar fuentes para QuestPDF (necesario en Linux)
+RUN apt-get update && apt-get install -y fontconfig fonts-dejavu && rm -rf /var/lib/apt/lists/*
+
 COPY --from=publish /app/publish .
 
 # Expose port 8080 (Render's default for web services)
