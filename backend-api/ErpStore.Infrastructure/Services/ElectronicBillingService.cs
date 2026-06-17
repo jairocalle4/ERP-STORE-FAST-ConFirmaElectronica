@@ -195,7 +195,7 @@ public class ElectronicBillingService : IElectronicBillingService
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-        var baseUrl = _configuration["NestJsApi:BaseUrl"] ?? "https://api-facturacion-sri-efki.onrender.com/api";
+        var baseUrl = _configuration["SriApiSettings:BaseUrl"];
         var endpoint = $"{baseUrl}/certificates/upload-cert";
 
         using var content = new MultipartFormDataContent();
