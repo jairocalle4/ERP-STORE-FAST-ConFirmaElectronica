@@ -178,6 +178,13 @@ public class ElectronicBillingController : ControllerBase
 
             await _context.SaveChangesAsync();
 
+            // Sincronizar el certificado de inmediato con la API de facturación
+            try {
+                await _billingService.SyncCertificateAsync(company);
+            } catch (Exception ex) {
+                Console.WriteLine($"Error during certificate sync: {ex.Message}");
+            }
+
             return Ok(new { message = "Firma electrónica cargada y verificada exitosamente en la base de datos." });
         }
         finally

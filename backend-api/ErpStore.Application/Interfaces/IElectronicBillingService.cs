@@ -24,6 +24,12 @@ public interface IElectronicBillingService
     /// Sincroniza la configuración de la empresa con la API de facturación electrónica.
     /// </summary>
     Task SyncConfigurationAsync(ErpStore.Domain.Entities.CompanySetting company);
+
+    /// <summary>
+    /// Sincroniza el certificado electrónico (.p12) subiéndolo a la API de facturación.
+    /// </summary>
+    Task SyncCertificateAsync(ErpStore.Domain.Entities.CompanySetting company);
+
     /// <summary>
     /// Orquesta el flujo completo: genera XML → firma → envía → consulta autorización → guarda estado.
     /// </summary>

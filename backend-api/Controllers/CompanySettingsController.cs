@@ -90,6 +90,7 @@ public class CompanySettingsController : ControllerBase
         
         try {
             await _billingService.SyncConfigurationAsync(settings);
+            await _billingService.SyncCertificateAsync(settings);
         } catch (Exception ex) {
             Console.WriteLine($"Error syncing with NestJS: {ex.Message}");
         }

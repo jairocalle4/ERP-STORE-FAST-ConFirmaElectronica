@@ -181,6 +181,40 @@ public class ElectronicBillingService : IElectronicBillingService
         }
     }
 
+    public async Task SyncCertificateAsync(ErpStore.Domain.Entities.CompanySetting company)
+    {
+        if (company.ElectronicSignatureFile == null || company.ElectronicSignatureFile.Length == 0)
+            return; // No certificate to sync
+            
+        if (string.IsNullOrEmpty(company.Ruc))
+            return; // Need RUC to sync certificate
+
+        var token = await GetAuthTokenAsync();
+        if (string.IsNullOrEmpty(token)) return;
+
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var baseUrl = _configuration["NestJsApi:BaseUrl"] ?? "https://api-facturacion-sri-efki.onrender.com/api";
+        var endpoint = $"{baseUrl}/certificates/upload-cert";
+
+        using var content = new MultipartFormDataContent();
+        content.Add(new StringContent(company.Ruc), "ruc");
+        content.Add(new StringContent(company.ElectronicSignaturePassword ?? ""), "password");
+
+        var fileContent = new ByteArrayContent(company.ElectronicSignatureFile);
+        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/x-pkcs12");
+        content.Add(fileContent, "cert", "certificado.p12");
+
+        var response = await client.PostAsync(endpoint, content);
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorJson = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Error uploading certificate to API: {errorJson}");
+        }
+    }
+
     public async Task<ElectronicBillingResult> EmitirFactura(int saleId)
     {
         var sale = await _context.Sales
