@@ -264,124 +264,14 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({ isOpen, onClose, sa
         openPrintWindow(ticketHTML);
     };
 
-    const handlePrintInvoice = () => {
+    const handlePrintInvoice = async () => {
         if (!sale) return;
-        const saleAny = sale as any;
-        const isElectronic = !!saleAny.isElectronic;
-        const isAuthorized = saleAny.electronicStatus === 'AUTORIZADO';
-        const accessKey: string = saleAny.accessKey || '';
-        const authNumber: string = saleAny.authorizationNumber || '';
-        const authDate: string = saleAny.authorizationDate
-            ? new Date(saleAny.authorizationDate).toLocaleString('es-EC')
-            : '';
-        const subtotal = sale.total;
-        const accessKeyFormatted = accessKey ? (accessKey.match(/.{1,10}/g) || []).join('  ') : '(Pendiente de autorización SRI)';
-        const detailRows = (sale.saleDetails || []).map((d, i) => {
-            const tot = d.unitPrice * d.quantity;
-            return `<tr><td style="text-align:center">${String(i+1).padStart(3,'0')}</td><td>${d.productName || d.product?.name || 'Producto/Servicio'}</td><td style="text-align:right">${d.quantity}</td><td style="text-align:right">$${d.unitPrice.toFixed(2)}</td><td style="text-align:right">$0.00</td><td style="text-align:right">$${tot.toFixed(2)}</td></tr>`;
-        }).join('');
-        const invoiceHTML = `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>RIDE - ${sale.noteNumber || sale.id}</title><style>
-@page{size:A4 portrait;margin:12mm 10mm}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,Helvetica,sans-serif;font-size:9.5px;color:#0f172a;line-height:1.35}
-.hg{display:grid;grid-template-columns:1fr 210px;gap:6px;margin-bottom:5px}
-.cb{border:1px solid #64748b;padding:7px 9px}
-.cn{font-size:14px;font-weight:900;text-transform:uppercase;margin-bottom:3px}
-.cd{font-size:8px;color:#475569;margin-top:1px}
-.cd b{color:#0f172a}
-.db{border:1px solid #64748b;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:5px 7px;gap:2px}
-.dtype{font-size:12px;font-weight:900;text-transform:uppercase;border:2px solid #0f172a;padding:2px 8px;letter-spacing:1px}
-.dnum{font-size:12px;font-weight:700}
-.dm{font-size:8px;color:#475569}
-.dm b{color:#0f172a}
-.ak{border:1px solid #64748b;padding:4px 7px;margin-bottom:5px}
-.alk{font-size:7.5px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:2px}
-.akv{font-family:'Courier New',monospace;font-size:8.5px;font-weight:700;word-break:break-all}
-.ar{display:flex;justify-content:space-between;margin-top:3px;font-size:8px}
-.ok{display:inline-block;background:#dcfce7;color:#166534;font-weight:700;font-size:7px;padding:1px 5px;border-radius:2px;border:1px solid #86efac}
-.pend{display:inline-block;background:#fef9c3;color:#854d0e;font-weight:700;font-size:7px;padding:1px 5px;border-radius:2px}
-.rimpe{border:1.5px solid #0f172a;padding:3px 8px;text-align:center;font-size:8.5px;font-weight:900;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px}
-.sb{border:1px solid #64748b;padding:4px 7px;margin-bottom:5px}
-.st{font-size:7.5px;font-weight:700;text-transform:uppercase;color:#64748b;border-bottom:1px solid #e2e8f0;padding-bottom:2px;margin-bottom:3px;letter-spacing:0.3px}
-.bg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
-.fl{font-size:7.5px;color:#64748b;text-transform:uppercase;font-weight:700}
-.fv{font-size:9.5px;font-weight:600;margin-top:1px}
-table{width:100%;border-collapse:collapse;margin-bottom:5px;font-size:8.5px}
-.th{background:#1e293b;color:white}
-.th th{padding:4px 5px;text-align:left;font-size:8px;text-transform:uppercase;font-weight:700}
-tr:nth-child(even){background:#f8fafc}
-td{padding:3px 5px;border-bottom:1px solid #e2e8f0;vertical-align:top}
-.botg{display:grid;grid-template-columns:1fr 190px;gap:5px;margin-bottom:5px}
-.pb{border:1px solid #64748b;padding:4px 7px}
-.tb{border:1px solid #64748b}
-.tr{display:flex;justify-content:space-between;padding:3px 7px;border-bottom:1px solid #f1f5f9;font-size:8.5px}
-.tr.grand{background:#1e293b;color:white;font-weight:900;font-size:10px;padding:4px 7px}
-.trl{color:#475569}
-.tr.grand .trl{color:#94a3b8}
-.pban{border:2px dashed #f59e0b;background:#fffbeb;padding:5px 8px;text-align:center;font-size:8px;color:#92400e;margin-bottom:5px}
-.lf{border-top:1px solid #e2e8f0;padding-top:4px;font-size:7.5px;color:#94a3b8;text-align:center}
-</style></head><body>
-<div class="hg">
-  <div class="cb">
-    <div class="cn">${company?.name || 'ERP STORE FAST'}</div>
-    <div class="cd"><b>Dirección Matriz:</b> ${company?.address || 'Sin dirección'}</div>
-    <div class="cd"><b>Teléfono:</b> ${company?.phone || '—'} &nbsp; <b>Email:</b> ${company?.email || '—'}</div>
-    <div class="cd"><b>Obligado a llevar contabilidad:</b> NO</div>
-    <div class="cd" style="margin-top:3px;font-size:8px;font-weight:700;text-transform:uppercase">Contribuyente RIMPE – Negocio Popular</div>
-  </div>
-  <div class="db">
-    <div class="dtype">FACTURA</div>
-    <div class="dm"><b>RUC:</b> ${company?.ruc || '0000000000001'}</div>
-    <div class="dnum">${sale.noteNumber || `001-001-${String(sale.id).padStart(9,'0')}`}</div>
-    <div class="dm"><b>Nº Autorización:</b></div>
-    <div style="font-family:monospace;font-size:7px;word-break:break-all;color:#0f172a">${authNumber || '(Pendiente SRI)'}</div>
-    <div class="dm"><b>F. Autorización:</b> ${authDate || '(Pendiente)'}</div>
-    <div class="dm"><b>Ambiente:</b> ${isElectronic ? (company?.sriEnvironment === '1' ? 'PRUEBAS' : 'PRODUCCIÓN') : 'NO CONECTADO'} &nbsp; <b>Emisión:</b> NORMAL</div>
-    <div class="dm"><b>F. Emisión:</b> ${new Date(sale.date).toLocaleDateString('es-EC')}</div>
-  </div>
-</div>
-<div class="ak">
-  <div class="alk">Clave de Acceso (49 dígitos)</div>
-  <div class="akv">${accessKeyFormatted}</div>
-  ${isElectronic ? `<div class="ar"><span><b>Estado SRI:</b> <span class="${isAuthorized ? 'ok' : 'pend'}">${isAuthorized ? '✓ AUTORIZADO' : '⏳ PENDIENTE'}</span></span><span><b>Nº Autorización:</b> ${authNumber || '—'}</span><span><b>F. Autorización:</b> ${authDate || '—'}</span></div>` : ''}
-</div>
-<div class="rimpe">★ CONTRIBUYENTE RÉGIMEN RIMPE — NEGOCIO POPULAR — NO COBRA IVA ★</div>
-<div class="sb">
-  <div class="st">Datos del Comprador / Receptor</div>
-  <div class="bg">
-    <div><div class="fl">Razón Social / Nombres:</div><div class="fv">${sale.client?.name || 'CONSUMIDOR FINAL'}</div></div>
-    <div><div class="fl">Identificación (C.I./RUC/Pasaporte):</div><div class="fv">${sale.client?.cedulaRuc || '9999999999'}</div></div>
-    <div><div class="fl">Método de Pago:</div><div class="fv">${sale.paymentMethod || 'Efectivo'}</div></div>
-  </div>
-</div>
-<table>
-  <thead class="th"><tr><th style="width:8%;text-align:center">Cód.</th><th>Descripción del Bien / Servicio</th><th style="width:7%;text-align:right">Cant.</th><th style="width:11%;text-align:right">P.Unitario</th><th style="width:10%;text-align:right">Descuento</th><th style="width:12%;text-align:right">P.Total</th></tr></thead>
-  <tbody>${detailRows}</tbody>
-</table>
-<div class="botg">
-  <div class="pb">
-    <div class="st">Forma de Pago</div>
-    <table style="margin-bottom:0"><thead class="th"><tr><th>Forma de Pago</th><th style="text-align:right">Plazo</th><th style="text-align:right">Unidad</th><th style="text-align:right">Valor</th></tr></thead>
-    <tbody><tr><td>${sale.paymentMethod || 'Efectivo'}</td><td style="text-align:right">—</td><td style="text-align:right">—</td><td style="text-align:right">$${subtotal.toFixed(2)}</td></tr></tbody></table>
-  </div>
-  <div class="tb">
-    <div class="tr"><span class="trl">Subtotal sin Impuestos</span><span>$${subtotal.toFixed(2)}</span></div>
-    <div class="tr"><span class="trl">Subtotal IVA 0%</span><span>$${subtotal.toFixed(2)}</span></div>
-    <div class="tr"><span class="trl">Subtotal No Objeto IVA</span><span>$0.00</span></div>
-    <div class="tr"><span class="trl">Subtotal Exento IVA</span><span>$0.00</span></div>
-    <div class="tr"><span class="trl">Descuento Total</span><span>$0.00</span></div>
-    <div class="tr"><span class="trl">IVA 0% (RIMPE)</span><span>$0.00</span></div>
-    <div class="tr grand"><span class="trl">VALOR TOTAL</span><span>$${subtotal.toFixed(2)}</span></div>
-  </div>
-</div>
-${!isElectronic ? `<div class="pban">⚠ <b>DOCUMENTO INTERNO — NO VÁLIDO COMO COMPROBANTE TRIBUTARIO</b><br/>Vista previa del RIDE. Válido como referencia interna hasta obtener la Firma Electrónica y autorización del SRI.</div>` : ''}
-<div class="lf">
-  <div>${isElectronic && isAuthorized ? '✓ DOCUMENTO AUTORIZADO POR EL SERVICIO DE RENTAS INTERNAS — www.sri.gob.ec' : 'Representación Impresa del Documento Electrónico (RIDE) — Autorización pendiente SRI'}</div>
-  <div>Contribuyente RIMPE – Negocio Popular | No está obligado a cobrar IVA | Régimen Simplificado</div>
-  <div style="font-size:7px;color:#cbd5e1">Generado: ${new Date().toLocaleString('es-EC')} — ERP-STORE-FAST</div>
-</div>
-</body></html>`;
-        openPrintWindow(invoiceHTML);
+        try {
+            await electronicBillingService.descargarRide(sale.id, sale.noteNumber || String(sale.id));
+        } catch (error) {
+            console.error('Error al descargar el RIDE PDF:', error);
+            alert('No se pudo descargar el RIDE en formato PDF. Asegúrese de que el backend esté disponible.');
+        }
     };
 
     const handleVoid = async () => {

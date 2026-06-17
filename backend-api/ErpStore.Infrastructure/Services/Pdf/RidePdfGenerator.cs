@@ -40,7 +40,7 @@ public static class RidePdfGenerator
                 page.Size(PageSizes.A4);
                 page.Margin(1.5f, Unit.Centimetre);
                 page.PageColor(Colors.White);
-                page.DefaultTextStyle(x => x.FontSize(10).FontFamily(Fonts.Arial).FontColor(TextColor));
+                page.DefaultTextStyle(x => x.FontSize(10).FontColor(TextColor));
 
                 page.Content().Column(c =>
                 {

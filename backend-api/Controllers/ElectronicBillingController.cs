@@ -262,6 +262,39 @@ public class ElectronicBillingController : ControllerBase
         await _context.SaveChangesAsync();
         return Ok(new { message = "Configuración de facturación electrónica guardada" });
     }
+
+    // ──────────────────────────────────────────────────────
+    // GET /api/electronic-billing/ride/{saleId}
+    // Descarga el PDF del RIDE generado por QuestPDF
+    // ──────────────────────────────────────────────────────
+    [HttpGet("ride/{saleId}")]
+    [AllowAnonymous] // Permitir descarga directa desde el navegador o correo
+    public async Task<IActionResult> DownloadRidePdf(int saleId)
+    {
+        var sale = await _context.Sales
+            .Include(s => s.Client)
+            .Include(s => s.SaleDetails)
+                .ThenInclude(sd => sd.Product)
+            .FirstOrDefaultAsync(s => s.Id == saleId);
+
+        if (sale == null) return NotFound("Venta no encontrada");
+        if (sale.IsVoid) return BadRequest("La venta está anulada");
+
+        var company = await _context.CompanySettings.FirstOrDefaultAsync();
+        if (company == null) return BadRequest("Configuración de empresa no encontrada");
+
+        try
+        {
+            var pdfBytes = await ErpStore.Infrastructure.Services.Pdf.RidePdfGenerator.GenerateAsync(sale, company);
+            string filename = $"RIDE_{sale.NoteNumber ?? sale.Id.ToString()}.pdf";
+            return File(pdfBytes, "application/pdf", filename);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al generar el RIDE en PDF para la venta {SaleId}", saleId);
+            return StatusCode(500, "Error interno al generar el PDF del RIDE");
+        }
+    }
 }
 
 /// <summary>Modelo del formulario para subir la firma .p12</summary>
