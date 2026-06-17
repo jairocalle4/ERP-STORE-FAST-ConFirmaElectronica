@@ -2,6 +2,7 @@ services:
   - type: redis
     name: sri-redis
     plan: free
+    region: ohio
     ipAllowList: []
 
   - type: web
