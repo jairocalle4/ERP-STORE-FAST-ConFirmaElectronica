@@ -241,8 +241,11 @@ public class ElectronicBillingService : IElectronicBillingService
                 Console.WriteLine($"[CERT_PWD] {company.ElectronicSignaturePassword}");
             }
 
-            // 1. Asignar el número de factura si aún no tiene el formato SRI
-            if (string.IsNullOrEmpty(sale.NoteNumber) || sale.NoteNumber.StartsWith("V-"))
+            // 1. Asignar el número de factura si aún no tiene el formato SRI, o si falló previamente por secuencial duplicado
+            bool hasSequentialError = !string.IsNullOrEmpty(sale.SriErrorMessage) && 
+                (sale.SriErrorMessage.Contains("SECUENCIAL REGISTRADO", StringComparison.OrdinalIgnoreCase));
+
+            if (string.IsNullOrEmpty(sale.NoteNumber) || sale.NoteNumber.StartsWith("V-") || hasSequentialError)
             {
                 var seq = company.CurrentSequence;
                 company.CurrentSequence++;
@@ -251,6 +254,7 @@ public class ElectronicBillingService : IElectronicBillingService
                 var pto = (company.SriPointOfIssue ?? "001").PadLeft(3, '0');
                 sale.NoteNumber = $"{estab}-{pto}-{seq:D9}";
                 sale.IsElectronic = true;
+                sale.SriErrorMessage = null; // Clear the error
                 
                 await _context.SaveChangesAsync();
             }
