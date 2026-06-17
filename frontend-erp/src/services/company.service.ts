@@ -16,6 +16,7 @@ export interface CompanySetting {
     socialReason?: string;
     brevoApiKey?: string;
     coverImageUrl?: string;
+    sriEnvironment?: string;
 }
 
 export interface CompanySettingDto {
@@ -33,6 +34,7 @@ export interface CompanySettingDto {
     socialReason?: string;
     brevoApiKey?: string;
     coverImageUrl?: string;
+    sriEnvironment?: string;
 }
 
 export const companyService = {
