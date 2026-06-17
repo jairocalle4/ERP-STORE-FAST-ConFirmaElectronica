@@ -46,7 +46,9 @@ public class ElectronicBillingController : ControllerBase
                 resultado.AuthorizationNumber,
                 resultado.AuthorizationDate,
                 resultado.Status,
-                resultado.ErrorMessage
+                resultado.ErrorMessage,
+                resultado.EmailSent,
+                resultado.EmailError
             );
 
             // Devolvemos 200 siempre; el campo Success indica si fue autorizado

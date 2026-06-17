@@ -9,6 +9,8 @@ export interface ElectronicBillingResult {
     authorizationDate?: string;
     status: 'AUTORIZADO' | 'PENDIENTE' | 'NO_AUTORIZADO' | 'ERROR';
     errorMessage?: string;
+    emailSent?: boolean;
+    emailError?: string;
 }
 
 export interface ElectronicBillingStatus {

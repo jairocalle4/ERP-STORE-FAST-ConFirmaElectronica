@@ -714,7 +714,7 @@ export default function PointOfSalePage() {
                                 {emittingFe ? (
                                     <><div className="w-5 h-5 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin shrink-0" /><span>Emitiendo factura electrónica...</span></>
                                 ) : feResult?.status === 'AUTORIZADO' ? (
-                                    <><Check size={20} className="text-emerald-600 shrink-0" /><div><p>✅ Factura Autorizada por el SRI</p><p className="text-xs font-mono mt-1 text-emerald-600 truncate">{feResult.authorizationNumber}</p></div></>
+                                    <><Check size={20} className="text-emerald-600 shrink-0" /><div><p>✅ Factura Autorizada por el SRI</p><p className="text-xs font-mono mt-1 text-emerald-600 truncate">{feResult.authorizationNumber}</p>{feResult.emailSent === false ? <p className="text-xs text-rose-500 mt-1">⚠ Error enviando correo: {feResult.emailError}</p> : <p className="text-xs text-emerald-600 mt-1">✉ Correo enviado al cliente</p>}</div></>
                                 ) : (
                                     <><FileText size={20} className="text-rose-500 shrink-0" /><div><p>⚠ {feResult?.errorMessage ?? 'Sin respuesta del SRI'}</p><p className="text-[10px] font-normal mt-1">Puedes reintentar desde Historial de Ventas.</p></div></>
                                 )}

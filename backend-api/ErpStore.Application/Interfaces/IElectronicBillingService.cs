@@ -9,9 +9,10 @@ public class ElectronicBillingResult
     public string? AccessKey { get; set; }
     public string? AuthorizationNumber { get; set; }
     public DateTime? AuthorizationDate { get; set; }
-    /// <summary>AUTORIZADO | PENDIENTE | NO_AUTORIZADO | ERROR</summary>
     public string Status { get; set; } = "ERROR";
     public string? ErrorMessage { get; set; }
+    public bool EmailSent { get; set; }
+    public string? EmailError { get; set; }
 }
 
 /// <summary>

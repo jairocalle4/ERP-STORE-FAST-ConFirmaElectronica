@@ -8,7 +8,9 @@ public record ElectronicBillingResultDto(
     string? AuthorizationNumber,
     DateTime? AuthorizationDate,
     string Status,
-    string? ErrorMessage
+    string? ErrorMessage,
+    bool EmailSent = false,
+    string? EmailError = null
 );
 
 public record EmitirFacturaRequest(int SaleId);

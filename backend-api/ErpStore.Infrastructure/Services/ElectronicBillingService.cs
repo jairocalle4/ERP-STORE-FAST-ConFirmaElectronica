@@ -404,7 +404,7 @@ public class ElectronicBillingService : IElectronicBillingService
             await _context.SaveChangesAsync();
 
             // Enviar correo automático
-            await TrySendInvoiceEmailAsync(sale, company);
+            var emailResult = await TrySendInvoiceEmailAsync(sale, company);
 
             return new ElectronicBillingResult
             {
@@ -412,7 +412,9 @@ public class ElectronicBillingService : IElectronicBillingService
                 Status = "AUTORIZADO",
                 AccessKey = accessKey,
                 AuthorizationNumber = authNumber,
-                AuthorizationDate = sale.AuthorizationDate
+                AuthorizationDate = sale.AuthorizationDate,
+                EmailSent = emailResult.Success,
+                EmailError = emailResult.Error
             };
         }
         catch (Exception ex)
@@ -425,14 +427,14 @@ public class ElectronicBillingService : IElectronicBillingService
         }
     }
 
-    private async Task TrySendInvoiceEmailAsync(Sale sale, CompanySetting company)
+    private async Task<(bool Success, string? Error)> TrySendInvoiceEmailAsync(Sale sale, CompanySetting company)
     {
         try
         {
-            if (sale.Client == null) return;
+            if (sale.Client == null) return (false, "El cliente no existe");
             var email = sale.Client.Email?.Trim();
             if (string.IsNullOrEmpty(email) || email.Equals("consumidor final", StringComparison.OrdinalIgnoreCase) || email.Contains("notiene"))
-                return; // No se envía a consumidor final o correos inválidos
+                return (false, "El cliente no tiene un correo válido configurado");
 
             string xmlContent = "";
             try { xmlContent = await GenerarXml(sale.Id); } catch { /* Ignore if XML fetch fails initially */ }
@@ -474,10 +476,12 @@ public class ElectronicBillingService : IElectronicBillingService
 
             await _emailService.SendEmailAsync(email, $"Factura Electrónica {sale.NoteNumber} - {company.Name}", body, attachments);
             _logger.LogInformation($"Correo enviado exitosamente a {email} para la factura {sale.Id}");
+            return (true, null);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Error al intentar enviar el correo de la factura {sale.Id}");
+            return (false, ex.Message);
         }
     }
 
