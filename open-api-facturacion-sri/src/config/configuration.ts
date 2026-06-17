@@ -8,8 +8,8 @@ export default () => ({
   port: parseInt(requireEnv('PORT'), 10),
   publicUrl: requireEnv('PUBLIC_URL'),
 
-  // Carbone API Configuration (REQUIRED)
-  carboneApi: requireEnv('CARBONE_API'),
+  // Carbone API Configuration (optional)
+  carboneApi: optionalEnv('CARBONE_API', ''),
 
   // PDF Render Configuration (optional with sensible defaults)
   pdfRender: {
@@ -41,8 +41,8 @@ export default () => ({
   sri: {
     environment: optionalEnv('SRI_ENVIRONMENT', 'development'),
     wsdl: {
-      reception: requireEnv('SRI_RECEPTION_WSDL'),
-      authorization: requireEnv('SRI_AUTHORIZATION_WSDL'),
+      reception: optionalEnv('SRI_RECEPTION_WSDL', 'https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl'),
+      authorization: optionalEnv('SRI_AUTHORIZATION_WSDL', 'https://celcer.sri.gob.ec/comprobantes-electronicos-ws/AutorizacionComprobantesOffline?wsdl'),
     },
     signature: {
       certPath: process.env.SRI_SIGNATURE_CERT_PATH
@@ -94,12 +94,12 @@ export default () => ({
     db: parseInt(optionalEnv('REDIS_DB', '0'), 10),
   },
 
-  // Directory Paths (REQUIRED)
+  // Directory Paths (optional)
   directories: {
-    templates: resolveDir(requireEnv('TEMPLATES_DIR')),
-    pdfs: resolveDir(requireEnv('PDFS_DIR')),
-    certs: resolveDir(requireEnv('CERTS_DIR')),
-    xmls: resolveDir(requireEnv('XMLS_DIR')),
+    templates: resolveDir(optionalEnv('TEMPLATES_DIR', './data/templates')),
+    pdfs: resolveDir(optionalEnv('PDFS_DIR', './data/pdfs')),
+    certs: resolveDir(optionalEnv('CERTS_DIR', './data/certs')),
+    xmls: resolveDir(optionalEnv('XMLS_DIR', './data/xmls')),
   },
 });
 
