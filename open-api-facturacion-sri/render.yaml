@@ -9,6 +9,7 @@ services:
     env: node
     plan: free
     region: ohio
+    rootDir: open-api-facturacion-sri
     buildCommand: "npm install && npm run build"
     startCommand: "npm run start:prod"
     envVars:
