@@ -1,23 +1,23 @@
 import { resolve } from 'path';
-import { requireEnv, resolveDir, ensureDir } from './env.utils';
+import { requireEnv, optionalEnv, resolveDir, ensureDir } from './env.utils';
 
 /**
  * Gets directory paths from environment variables
- * All paths are REQUIRED - no fallbacks
+ * Fallback to defaults if not provided
  */
 export const STORAGE_PATHS = {
   get templates(): string {
-    const dir = resolveDir(requireEnv('TEMPLATES_DIR'));
+    const dir = resolveDir(optionalEnv('TEMPLATES_DIR', './data/templates'));
     ensureDir(dir);
     return dir;
   },
   get pdfs(): string {
-    const dir = resolveDir(requireEnv('PDFS_DIR'));
+    const dir = resolveDir(optionalEnv('PDFS_DIR', './data/pdfs'));
     ensureDir(dir);
     return dir;
   },
   get certs(): string {
-    const dir = resolveDir(requireEnv('CERTS_DIR'));
+    const dir = resolveDir(optionalEnv('CERTS_DIR', './data/certs'));
     ensureDir(dir);
     return dir;
   },
