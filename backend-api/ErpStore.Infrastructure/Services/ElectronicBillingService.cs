@@ -447,7 +447,7 @@ public class ElectronicBillingService : IElectronicBillingService
             
             try
             {
-                var pdfBytes = ErpStore.Infrastructure.Services.Pdf.RidePdfGenerator.Generate(sale, company);
+                var pdfBytes = await ErpStore.Infrastructure.Services.Pdf.RidePdfGenerator.GenerateAsync(sale, company);
                 attachments.Add(($"RIDE_{sale.NoteNumber ?? sale.Id.ToString()}.pdf", pdfBytes, "application/pdf"));
             }
             catch (Exception ex)
@@ -544,7 +544,7 @@ public class ElectronicBillingService : IElectronicBillingService
 
         try
         {
-            return ErpStore.Infrastructure.Services.Pdf.RidePdfGenerator.Generate(sale, company);
+            return await ErpStore.Infrastructure.Services.Pdf.RidePdfGenerator.GenerateAsync(sale, company);
         }
         catch (Exception ex)
         {

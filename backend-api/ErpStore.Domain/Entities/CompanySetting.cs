@@ -64,4 +64,7 @@ public class CompanySetting : BaseEntity
 
     // SEO & Social Media
     public string? CoverImageUrl { get; set; }
+    
+    // Logo for PDF and system UI
+    public string? LogoUrl { get; set; }
 }

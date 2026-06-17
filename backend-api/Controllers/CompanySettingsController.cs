@@ -74,6 +74,7 @@ public class CompanySettingsController : ControllerBase
         settings.SmtpPass = dto.SmtpPass;
         settings.BrevoApiKey = dto.BrevoApiKey;
         settings.CoverImageUrl = dto.CoverImageUrl;
+        settings.LogoUrl = dto.LogoUrl;
 
         // SRI Fields
         settings.SriEnvironment = dto.SriEnvironment;

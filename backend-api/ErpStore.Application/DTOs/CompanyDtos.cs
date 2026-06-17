@@ -27,4 +27,5 @@ public class CompanySettingDto
     public string? ElectronicSignaturePath { get; set; }
     public string? ElectronicSignaturePassword { get; set; }
     public bool ElectronicBillingEnabled { get; set; }
+    public string? LogoUrl { get; set; }
 }

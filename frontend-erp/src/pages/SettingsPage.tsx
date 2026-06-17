@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Building2, Save, MapPin, Phone, Mail, Hash, ShieldCheck, Eye, EyeOff, FileText, Upload, CheckCircle, AlertCircle, Zap } from 'lucide-react';
+import { Building2, Save, MapPin, Phone, Mail, Hash, ShieldCheck, Eye, EyeOff, FileText, Upload, CheckCircle, AlertCircle, Zap, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { GlassCard } from '../components/common/GlassCard';
 import { companyService } from '../services/company.service';
 import type { CompanySetting } from '../services/company.service';
@@ -15,6 +15,10 @@ export default function SettingsPage() {
     const [testingEmail, setTestingEmail] = useState(false);
     const [testEmailResult, setTestEmailResult] = useState<{ ok: boolean; msg: string; detail?: string } | null>(null);
     const addNotification = useNotificationStore(state => state.addNotification);
+    
+    // Logo upload
+    const [uploadingLogo, setUploadingLogo] = useState(false);
+    const logoInputRef = useRef<HTMLInputElement>(null);
 
     // === Facturación Electrónica ===
     const [feSettings, setFeSettings] = useState<Omit<ElectronicBillingSettings, 'hasSignature'>>({
@@ -89,6 +93,39 @@ export default function SettingsPage() {
         }
     };
 
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validar tamaño (máximo 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            addNotification('La imagen no debe superar los 2MB', 'error');
+            return;
+        }
+
+        setUploadingLogo(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // Usar el endpoint de MediaController
+            const response = await api.post('/media/upload-image', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            
+            if (response.data.url) {
+                setSettings(s => s ? { ...s, logoUrl: response.data.url } : null);
+                addNotification('Logo subido exitosamente, no olvides guardar', 'success');
+            }
+        } catch (err: any) {
+            console.error('Error al subir logo:', err);
+            addNotification('Error al subir el logo a Cloudinary', 'error');
+        } finally {
+            setUploadingLogo(false);
+            if (logoInputRef.current) logoInputRef.current.value = '';
+        }
+    };
+
     const fetchSettings = async () => {
         try {
             const data = await companyService.getSettings();
@@ -147,6 +184,31 @@ export default function SettingsPage() {
                         </h3>
 
                         <div className="space-y-4">
+                            {/* Logo Uploader */}
+                            <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-indigo-200 rounded-2xl bg-indigo-50/50 hover:bg-indigo-50 transition-colors relative group">
+                                {settings?.logoUrl ? (
+                                    <div className="relative w-32 h-32 flex items-center justify-center">
+                                        <img src={settings.logoUrl} alt="Logo Empresa" className="max-w-full max-h-full object-contain" />
+                                        <div className="absolute inset-0 bg-black/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <button type="button" onClick={() => logoInputRef.current?.click()} className="text-white text-xs font-bold px-3 py-1 bg-indigo-600 rounded-lg hover:bg-indigo-700">Cambiar</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center">
+                                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-indigo-100">
+                                            <ImageIcon size={24} className="text-indigo-400" />
+                                        </div>
+                                        <p className="text-sm font-bold text-slate-700">Logo de la Empresa</p>
+                                        <p className="text-xs text-slate-500 mt-1 mb-4">Aparecerá en el RIDE (PDF) y el sistema</p>
+                                        <button type="button" onClick={() => logoInputRef.current?.click()} disabled={uploadingLogo} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 mx-auto disabled:opacity-70">
+                                            {uploadingLogo ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                                            {uploadingLogo ? 'Subiendo...' : 'Subir Logo'}
+                                        </button>
+                                    </div>
+                                )}
+                                <input type="file" ref={logoInputRef} className="hidden" accept="image/png, image/jpeg, image/jpg, image/webp" onChange={handleLogoUpload} />
+                            </div>
+
                             <div>
                                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Nombre Comercial</label>
                                 <input
