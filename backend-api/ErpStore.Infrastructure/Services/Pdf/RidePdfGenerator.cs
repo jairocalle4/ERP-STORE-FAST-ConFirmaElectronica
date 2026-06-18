@@ -50,7 +50,7 @@ public static class RidePdfGenerator
                     c.Item().PaddingTop(15).Element(el => ComposeTotals(el, sale));
                 });
 
-                page.Footer().Element(ComposeFooter);
+                page.Footer().Element(el => ComposeFooter(el, company));
             });
         });
 
@@ -75,30 +75,53 @@ public static class RidePdfGenerator
                 {
                     column.Item().Text(company.SocialReason).FontSize(10);
                 }
+                
+                // RUC a la izquierda
+                column.Item().PaddingTop(5).Text(t =>
+                {
+                    t.Span("R.U.C.: ").Bold();
+                    t.Span(company.Ruc ?? "");
+                });
 
-                column.Item().PaddingTop(5).Text($"Dirección: {company.Address}").FontSize(9);
+                if (!string.IsNullOrEmpty(company.Address))
+                {
+                    column.Item().Text(t =>
+                    {
+                        t.Span("Dirección: ").Bold();
+                        t.Span(company.Address);
+                    });
+                }
+                
                 if (!string.IsNullOrEmpty(company.Phone))
                 {
-                    column.Item().Text($"Teléfono: {company.Phone}").FontSize(9);
+                    column.Item().Text(t =>
+                    {
+                        t.Span("Teléfono: ").Bold();
+                        t.Span(company.Phone);
+                    });
                 }
+                
                 if (!string.IsNullOrEmpty(company.Email))
                 {
-                    column.Item().Text($"Email: {company.Email}").FontSize(9);
+                    column.Item().Text(t =>
+                    {
+                        t.Span("Email: ").Bold();
+                        t.Span(company.Email);
+                    });
                 }
 
                 column.Item().PaddingTop(10).Text("OBLIGADO A LLEVAR CONTABILIDAD: NO").FontSize(9).Bold();
                 
                 if (company.TributaryRegime != null && company.TributaryRegime.Contains("RIMPE"))
                 {
-                    column.Item().Text("CONTRIBUYENTE RÉGIMEN RIMPE").FontSize(9).Bold();
+                    column.Item().PaddingTop(4).Text("CONTRIBUYENTE RÉGIMEN RIMPE").FontSize(9).Bold().FontColor(PrimaryColor);
                 }
             });
 
             // Derecha: Datos de la Factura (Recuadro)
             row.RelativeItem(6).Border(1).BorderColor(BorderColor).Padding(10).Column(column =>
             {
-                column.Item().Text($"R.U.C.: {company.Ruc}").FontSize(12).Bold();
-                column.Item().PaddingTop(5).Text("F A C T U R A").FontSize(16).Bold().FontColor(PrimaryColor);
+                column.Item().Text("F A C T U R A").FontSize(16).Bold().FontColor(PrimaryColor);
                 column.Item().PaddingTop(5).Text($"No. {sale.NoteNumber}").FontSize(12);
                 
                 column.Item().PaddingTop(10).Text("NÚMERO DE AUTORIZACIÓN").FontSize(9).Bold();
@@ -127,17 +150,19 @@ public static class RidePdfGenerator
     {
         container.Border(1).BorderColor(BorderColor).Background("#F8FAFC").Padding(10).Column(column =>
         {
+            column.Item().PaddingBottom(5).Text("DATOS DEL COMPRADOR / RECEPTOR").FontSize(10).Bold().FontColor(PrimaryColor);
+            
             column.Item().Row(row =>
             {
                 row.RelativeItem().Text(t =>
                 {
-                    t.Span("Razón Social / Nombres y Apellidos: ").Bold();
+                    t.Span("Razón Social / Nombres: ").Bold();
                     t.Span(sale.Client?.Name ?? "Consumidor Final");
                 });
                 
                 row.ConstantItem(150).Text(t =>
                 {
-                    t.Span("Identificación: ").Bold();
+                    t.Span("RUC/CI: ").Bold();
                     t.Span(sale.Client?.CedulaRuc ?? "9999999999999");
                 });
             });
@@ -194,7 +219,7 @@ public static class RidePdfGenerator
                     table.Cell().BorderBottom(1).BorderColor(BorderColor).Padding(5).AlignRight().Text(item.Quantity.ToString());
                     table.Cell().BorderBottom(1).BorderColor(BorderColor).Padding(5).Text(item.Product?.Name ?? "Producto");
                     table.Cell().BorderBottom(1).BorderColor(BorderColor).Padding(5).AlignRight().Text($"${item.UnitPrice:F2}");
-                    table.Cell().BorderBottom(1).BorderColor(BorderColor).Padding(5).AlignRight().Text($"$0.00"); // Asumiendo 0 descuento por ahora
+                    table.Cell().BorderBottom(1).BorderColor(BorderColor).Padding(5).AlignRight().Text($"$0.00"); // Asumiendo 0 descuento
                     table.Cell().BorderBottom(1).BorderColor(BorderColor).Padding(5).AlignRight().Text($"${item.Subtotal:F2}");
                 }
             }
@@ -205,7 +230,6 @@ public static class RidePdfGenerator
     {
         container.Row(row =>
         {
-            // Espacio vacío o información adicional a la izquierda
             row.RelativeItem().PaddingRight(20).Column(column =>
             {
                 if (!string.IsNullOrEmpty(sale.Client?.Email))
@@ -221,7 +245,6 @@ public static class RidePdfGenerator
                 column.Item().Text("Gracias por su compra.").FontSize(9).Italic();
             });
 
-            // Tabla de totales a la derecha
             row.ConstantItem(250).Table(table =>
             {
                 table.ColumnsDefinition(columns =>
@@ -230,12 +253,11 @@ public static class RidePdfGenerator
                     columns.ConstantColumn(80);
                 });
 
-                // Calculos de IVA (Asumiendo que Total = Subtotal + Iva)
                 decimal subtotal = sale.SaleDetails?.Sum(d => d.Subtotal) ?? 0;
                 decimal iva = sale.Total - subtotal;
-                decimal subtotal15 = iva > 0 ? subtotal : 0;
+                decimal subtotalIva = iva > 0 ? subtotal : 0;
                 decimal subtotal0 = iva == 0 ? subtotal : 0;
-                decimal ivaRate = iva > 0 ? 15 : 0; // Se asume 15% actualmente en ECU
+                decimal ivaRate = iva > 0 ? 15 : 0; // Para visualizacion
 
                 void DrawTotalRow(string label, string value, bool isTotal = false)
                 {
@@ -254,24 +276,44 @@ public static class RidePdfGenerator
                     });
                 }
 
-                DrawTotalRow($"SUBTOTAL {ivaRate}%", $"${subtotal15:F2}");
-                DrawTotalRow("SUBTOTAL 0%", $"${subtotal0:F2}");
-                DrawTotalRow("DESCUENTO", "$0.00");
-                DrawTotalRow("SUBTOTAL", $"${subtotal:F2}");
+                DrawTotalRow($"Subtotal {ivaRate}%", $"${subtotalIva:F2}");
+                DrawTotalRow("Subtotal 0%", $"${subtotal0:F2}");
+                DrawTotalRow("Subtotal No Objeto de IVA", "$0.00");
+                DrawTotalRow("Subtotal Exento de IVA", "$0.00");
+                DrawTotalRow("Subtotal sin Impuestos", $"${subtotal:F2}");
+                DrawTotalRow("Total Descuento", "$0.00");
+                DrawTotalRow("ICE", "$0.00");
                 DrawTotalRow($"IVA {ivaRate}%", $"${iva:F2}");
                 DrawTotalRow("VALOR TOTAL", $"${sale.Total:F2}", true);
             });
         });
     }
 
-    private static void ComposeFooter(IContainer container)
+    private static void ComposeFooter(IContainer container, CompanySetting company)
     {
-        container.AlignCenter().PaddingTop(10).Text(x =>
-        {
-            x.Span("Página ");
-            x.CurrentPageNumber();
-            x.Span(" de ");
-            x.TotalPages();
+        container.Column(c => {
+            c.Item().AlignCenter().Text("✓ DOCUMENTO AUTORIZADO POR EL SERVICIO DE RENTAS INTERNAS — www.sri.gob.ec")
+             .FontSize(8).Bold().FontColor(PrimaryColor);
+
+            if (!string.IsNullOrEmpty(company.LegalMessage))
+            {
+                c.Item().AlignCenter().Text(company.LegalMessage).FontSize(8);
+            }
+            else if (company.TributaryRegime != null && company.TributaryRegime.Contains("RIMPE"))
+            {
+                c.Item().AlignCenter().Text("Contribuyente RIMPE – Negocio Popular | Régimen Simplificado").FontSize(8);
+            }
+
+            var dateStr = DateTime.Now.ToString("dd/MM/yyyy, h:mm:ss t. m.");
+            c.Item().AlignCenter().Text($"Generado: {dateStr} — ERP-STORE-FAST").FontSize(8).FontColor(Colors.Grey.Medium);
+            
+            c.Item().PaddingTop(5).AlignCenter().Text(x =>
+            {
+                x.Span("Página ");
+                x.CurrentPageNumber();
+                x.Span(" de ");
+                x.TotalPages();
+            });
         });
     }
 }
