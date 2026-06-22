@@ -92,12 +92,23 @@ export class SriSoapClient {
 
     if (recepcion.estado === 'DEVUELTA') {
       const mensajes = this.extractMensajes(recepcion);
-      return {
-        success: false,
-        claveAcceso,
-        estado: 'DEVUELTA',
-        mensajes,
-      };
+      
+      const isAlreadyRegistered = mensajes.some(m => 
+        (m.mensaje && (m.mensaje.includes('SECUENCIAL REGISTRADO') || m.mensaje.includes('CLAVE DE ACCESO REGISTRADA'))) ||
+        (m.informacionAdicional && (m.informacionAdicional.includes('SECUENCIAL REGISTRADO') || m.informacionAdicional.includes('CLAVE DE ACCESO REGISTRADA')))
+      );
+
+      if (isAlreadyRegistered) {
+        this.logger.log(`Auto-recuperando comprobante ya registrado en SRI: ...${claveAcceso.slice(-8)}`);
+        // Continuar al Paso 2 para consultar su estado real
+      } else {
+        return {
+          success: false,
+          claveAcceso,
+          estado: 'DEVUELTA',
+          mensajes,
+        };
+      }
     }
 
     // Paso 2: Consultar autorización con reintentos
