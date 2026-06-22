@@ -598,8 +598,8 @@ export default function SettingsPage() {
                                     />
                                 </div>
                                 <p className="text-[10px] text-slate-400 mt-1 italic">
-                                    Último n° usado. La próxima factura será #{(settings?.currentSequence ?? 0) + 1}.
-                                    En producción reinicia en <span className="font-bold">0</span>.
+                                    La próxima factura usará el n° <span className="font-bold text-indigo-500">#{settings?.currentSequence ?? 0}</span>.
+                                    Después se incrementará automáticamente.
                                 </p>
                             </div>
                             <div className="md:col-span-2">
