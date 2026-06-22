@@ -35,7 +35,9 @@ export class ClaveAccesoService {
     const establecimiento = data.establecimiento.padStart(3, '0');
     const puntoEmision = data.puntoEmision.padStart(3, '0');
     const secuencial = data.secuencial.padStart(9, '0');
-    const codigoNumerico = data.codigoNumerico || this.generateCodigoNumerico();
+    // Para que los reintentos funcionen y auto-recuperen del SRI, la clave de acceso debe ser determinista.
+    // Usamos los últimos 8 dígitos del secuencial como código numérico si no se provee uno.
+    const codigoNumerico = data.codigoNumerico || secuencial.substring(1);
     const tipoEmision = data.tipoEmision || TipoEmision.NORMAL;
 
     const claveBase =
