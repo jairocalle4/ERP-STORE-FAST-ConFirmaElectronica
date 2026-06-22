@@ -65,7 +65,16 @@ export default function SettingsPage() {
             // Guarda la configuración de FE (establecimiento, ambiente, régimen, etc.)
             await electronicBillingService.guardarConfiguracion(feSettings);
             // Guarda también el secuencial y el mensaje legal (pertenecen a CompanySetting)
-            if (settings) await companyService.updateSettings(settings);
+            if (settings) {
+                const updatedSettings = { 
+                    ...settings, 
+                    ...feSettings,
+                    pointOfIssue: feSettings.sriPointOfIssue,
+                    establishment: feSettings.sriEstablishment
+                };
+                await companyService.updateSettings(updatedSettings);
+                setSettings(updatedSettings);
+            }
             addNotification('Configuración de Facturación Electrónica guardada', 'success');
         } catch {
             addNotification('Error al guardar la configuración de FE', 'error');
@@ -144,7 +153,14 @@ export default function SettingsPage() {
 
         setSaving(true);
         try {
-            await companyService.updateSettings(settings);
+            const updatedSettings = { 
+                ...settings, 
+                ...feSettings,
+                pointOfIssue: feSettings.sriPointOfIssue,
+                establishment: feSettings.sriEstablishment
+            };
+            await companyService.updateSettings(updatedSettings);
+            setSettings(updatedSettings);
             addNotification('Configuración guardada correctamente', 'success');
         } catch (err) {
             console.error('Error saving settings', err);
