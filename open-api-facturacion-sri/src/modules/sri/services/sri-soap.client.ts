@@ -112,44 +112,52 @@ export class SriSoapClient {
     }
 
     // Paso 2: Consultar autorización con reintentos
-    for (let intento = 1; intento <= retries; intento++) {
+    const authRetries = Math.max(retries, 8); // At least 8 retries for slow SRI
+    const authDelay = Math.max(delay, 3000);  // At least 3s delay
+
+    for (let intento = 1; intento <= authRetries; intento++) {
       if (intento > 1) {
-        await this.delay(delay);
+        await this.delay(authDelay);
       }
 
-      const autorizacion = await this.autorizarComprobante(claveAcceso);
+      try {
+        const autorizacion = await this.autorizarComprobante(claveAcceso);
 
-      if (
-        autorizacion.autorizaciones &&
-        autorizacion.autorizaciones.autorizacion
-      ) {
-        const auth = Array.isArray(autorizacion.autorizaciones.autorizacion)
-          ? autorizacion.autorizaciones.autorizacion[0]
-          : autorizacion.autorizaciones.autorizacion;
+        if (
+          autorizacion.autorizaciones &&
+          autorizacion.autorizaciones.autorizacion
+        ) {
+          const auth = Array.isArray(autorizacion.autorizaciones.autorizacion)
+            ? autorizacion.autorizaciones.autorizacion[0]
+            : autorizacion.autorizaciones.autorizacion;
 
-        if (auth.estado === 'AUTORIZADO') {
-          return {
-            success: true,
-            claveAcceso,
-            estado: 'AUTORIZADO',
-            fechaAutorizacion: auth.fechaAutorizacion,
-            numeroAutorizacion: auth.numeroAutorizacion,
-            xmlAutorizado: auth.comprobante,
-            mensajes: this.extractMensajesAutorizacion(auth),
-          };
+          if (auth.estado === 'AUTORIZADO') {
+            return {
+              success: true,
+              claveAcceso,
+              estado: 'AUTORIZADO',
+              fechaAutorizacion: auth.fechaAutorizacion,
+              numeroAutorizacion: auth.numeroAutorizacion,
+              xmlAutorizado: auth.comprobante,
+              mensajes: this.extractMensajesAutorizacion(auth),
+            };
+          }
+
+          if (auth.estado === 'NO AUTORIZADO') {
+            this.logger.warn(
+              `Comprobante NO AUTORIZADO: ...${claveAcceso.slice(-8)}`,
+            );
+            return {
+              success: false,
+              claveAcceso,
+              estado: 'NO AUTORIZADO',
+              mensajes: this.extractMensajesAutorizacion(auth),
+            };
+          }
         }
-
-        if (auth.estado === 'NO AUTORIZADO') {
-          this.logger.warn(
-            `Comprobante NO AUTORIZADO: ...${claveAcceso.slice(-8)}`,
-          );
-          return {
-            success: false,
-            claveAcceso,
-            estado: 'NO AUTORIZADO',
-            mensajes: this.extractMensajesAutorizacion(auth),
-          };
-        }
+      } catch (authError) {
+        this.logger.warn(`Error de conexión al SRI en intento ${intento}: ${(authError as Error).message}`);
+        // Si es ECONNRESET o cualquier error, ignorar y reintentar en el siguiente ciclo
       }
     }
 
