@@ -68,6 +68,7 @@ export default function ExpensesPage() {
         e.preventDefault();
         try {
             await expensesService.create(formData);
+            addNotification('Egreso registrado correctamente', 'success');
             setIsModalOpen(false);
             setFormData({
                 description: '',
@@ -97,10 +98,12 @@ export default function ExpensesPage() {
         if (!deleteId) return;
         try {
             await expensesService.delete(deleteId);
+            addNotification('Egreso eliminado correctamente', 'success');
             setDeleteId(null);
             fetchExpenses(currentPage);
         } catch (err) {
             console.error('Error deleting expense', err);
+            addNotification('Error al eliminar el egreso', 'error');
         }
     };
 

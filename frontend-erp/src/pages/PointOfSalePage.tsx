@@ -359,7 +359,7 @@ export default function PointOfSalePage() {
 
                                                 <div className="aspect-square rounded-2xl bg-slate-50 dark:bg-slate-700 mb-3 overflow-hidden flex items-center justify-center border border-slate-100 dark:border-slate-600 relative group-hover:bg-white dark:group-hover:bg-slate-600 transition-colors">
                                                     {product.images?.[0] ? (
-                                                        <img src={product.images[0].url} alt={product.name} className="w-full h-full object-contain p-2 mix-blend-multiply transition-transform duration-500 group-hover:scale-110" />
+                                                        <img src={product.images[0].url} alt={product.name} className="w-full h-full object-contain p-2 mix-blend-multiply dark:mix-blend-normal transition-transform duration-500 group-hover:scale-110" />
                                                     ) : (
                                                         <Package className="text-slate-200" size={32} />
                                                     )}

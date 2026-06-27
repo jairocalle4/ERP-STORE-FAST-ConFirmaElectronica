@@ -4,11 +4,13 @@ import { GlassCard } from '../components/common/GlassCard';
 import type { Client, ClientCreateDto } from '../services/client.service';
 import { clientService } from '../services/client.service';
 import ClientFormModal from '../components/modals/ClientFormModal';
+import { useNotificationStore } from '../store/useNotificationStore';
 
 export default function ClientListPage() {
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const addNotification = useNotificationStore(s => s.addNotification);
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,9 +44,10 @@ export default function ClientListPage() {
         if (window.confirm('¿Estás seguro de eliminar este cliente?')) {
             try {
                 await clientService.delete(id);
+                addNotification('Cliente eliminado correctamente', 'success');
                 fetchClients(currentPage);
             } catch (err) {
-                alert('Error al eliminar cliente');
+                addNotification('Error al eliminar cliente', 'error');
             }
         }
     };
@@ -63,12 +66,15 @@ export default function ClientListPage() {
         try {
             if (editingClient) {
                 await clientService.update(editingClient.id, { ...data, id: editingClient.id });
+                addNotification('Cliente actualizado correctamente', 'success');
             } else {
                 await clientService.create(data);
+                addNotification('Cliente creado correctamente', 'success');
             }
             fetchClients(currentPage);
         } catch (err) {
             console.error('Error saving client', err);
+            addNotification('Error al guardar cliente', 'error');
             throw err; // Re-throw to let modal handle error display
         }
     };

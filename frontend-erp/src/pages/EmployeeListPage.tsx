@@ -4,11 +4,13 @@ import { GlassCard } from '../components/common/GlassCard';
 import type { Employee, EmployeeCreateDto } from '../services/employee.service';
 import { employeeService } from '../services/employee.service';
 import EmployeeFormModal from '../components/modals/EmployeeFormModal';
+import { useNotificationStore } from '../store/useNotificationStore';
 
 export default function EmployeeListPage() {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const addNotification = useNotificationStore(s => s.addNotification);
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,9 +44,10 @@ export default function EmployeeListPage() {
         if (window.confirm('¿Estás seguro de eliminar este empleado?')) {
             try {
                 await employeeService.delete(id);
+                addNotification('Empleado eliminado correctamente', 'success');
                 fetchEmployees(currentPage);
             } catch (err) {
-                alert('Error al eliminar empleado');
+                addNotification('Error al eliminar empleado', 'error');
             }
         }
     };
@@ -63,12 +66,15 @@ export default function EmployeeListPage() {
         try {
             if (editingEmployee) {
                 await employeeService.update(editingEmployee.id, { ...data, id: editingEmployee.id });
+                addNotification('Empleado actualizado correctamente', 'success');
             } else {
                 await employeeService.create(data);
+                addNotification('Empleado creado correctamente', 'success');
             }
             fetchEmployees(currentPage);
         } catch (err) {
             console.error('Error saving employee', err);
+            addNotification('Error al guardar empleado', 'error');
             throw err;
         }
     };
