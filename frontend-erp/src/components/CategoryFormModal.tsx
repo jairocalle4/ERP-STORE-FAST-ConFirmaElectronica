@@ -66,11 +66,11 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({ category, onClose
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/10 backdrop-blur-[2px] animate-fade-in">
-            <div className="bg-white p-8 rounded-3xl w-full max-w-md shadow-[0_20px_50px_rgba(0,0,0,0.1)] animate-scale-in border border-slate-100">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-[2px] animate-fade-in">
+            <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl w-full max-w-md shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-scale-in border border-slate-100 dark:border-slate-700/50">
                 <div className="flex justify-between items-center mb-8">
-                    <h2 className="text-2xl font-bold text-slate-800 tracking-tight">{isEdit ? 'Editar Categoría' : 'Nueva Categoría'}</h2>
-                    <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-all">
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">{isEdit ? 'Editar Categoría' : 'Nueva Categoría'}</h2>
+                    <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-full transition-all cursor-pointer">
                         <X size={20} />
                     </button>
                 </div>
@@ -82,7 +82,7 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({ category, onClose
                             type="text"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all placeholder:text-slate-300 text-slate-700 font-medium"
+                            className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl focus:bg-white dark:focus:bg-slate-850 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all placeholder:text-slate-350 text-slate-700 dark:text-white font-medium"
                             placeholder="Ej: Electrónica"
                             required
                         />
@@ -92,34 +92,34 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({ category, onClose
                         <textarea
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all placeholder:text-slate-300 text-slate-700 font-medium resize-none"
+                            className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl focus:bg-white dark:focus:bg-slate-850 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all placeholder:text-slate-355 text-slate-700 dark:text-white font-medium resize-none"
                             placeholder="Descripción breve..."
                             rows={3}
                         />
                     </div>
-                    <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 transition-colors hover:bg-slate-100/50">
+                    <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-700 transition-colors hover:bg-slate-100/50 dark:hover:bg-slate-800/50">
                         <input
                             type="checkbox"
                             id="catActive"
                             checked={formData.isActive}
                             onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                            className="w-5 h-5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                            className="w-5 h-5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
                         />
-                        <label htmlFor="catActive" className="text-sm font-bold text-slate-600 cursor-pointer select-none">Categoría Activa</label>
+                        <label htmlFor="catActive" className="text-sm font-bold text-slate-600 dark:text-slate-300 cursor-pointer select-none">Categoría Activa</label>
                     </div>
 
                     <div className="pt-4 flex gap-3">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 px-6 py-4 text-slate-400 hover:text-slate-600 font-bold transition-all"
+                            className="flex-1 px-6 py-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold transition-all cursor-pointer"
                         >
                             Cancelar
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex-[2] py-4 bg-slate-900 hover:bg-black text-white rounded-2xl font-bold shadow-xl shadow-slate-900/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                            className="flex-[2] py-4 bg-slate-900 dark:bg-indigo-600 hover:bg-black dark:hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-xl shadow-slate-900/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                         >
                             {loading ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
                             {isEdit ? 'Actualizar' : 'Guardar'}

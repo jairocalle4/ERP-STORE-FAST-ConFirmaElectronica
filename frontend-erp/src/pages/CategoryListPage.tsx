@@ -183,7 +183,7 @@ export default function CategoryListPage() {
                                 placeholder="Buscar categoría..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2.5 bg-white/50 border border-slate-200/60 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none transition-all placeholder:text-slate-400"
+                                className="w-full pl-10 pr-4 py-2.5 bg-white/50 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-700/50 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none transition-all placeholder:text-slate-400 dark:text-white"
                             />
                         </div>
                     </div>
@@ -204,20 +204,20 @@ export default function CategoryListPage() {
                                 {filteredCategories.map((c) => (
                                     <div key={c.id} className="category-card group p-8 flex flex-col h-full animate-scale-in">
                                         <div className="flex justify-between items-start mb-6">
-                                            <div className="p-4 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-2xl text-white shadow-xl shadow-indigo-200">
+                                            <div className="p-4 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-2xl text-white shadow-xl shadow-indigo-200 dark:shadow-none">
                                                 <LayoutList size={28} />
                                             </div>
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={() => openEdit(c)}
-                                                    className="p-2.5 bg-white border border-slate-100 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 rounded-xl transition-all shadow-sm"
+                                                    className="p-2.5 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 dark:hover:text-indigo-400 rounded-xl transition-all shadow-sm cursor-pointer"
                                                     title="Editar Categoría"
                                                 >
                                                     <Edit2 size={18} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteClick(c.id)}
-                                                    className="p-2.5 bg-white border border-slate-100 text-slate-400 hover:text-rose-600 hover:border-rose-200 rounded-xl transition-all shadow-sm"
+                                                    className="p-2.5 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 text-slate-400 hover:text-rose-600 hover:border-rose-200 dark:hover:text-rose-400 rounded-xl transition-all shadow-sm cursor-pointer"
                                                     title="Eliminar"
                                                 >
                                                     <Trash2 size={18} />
@@ -227,19 +227,19 @@ export default function CategoryListPage() {
 
                                         <div className="mb-4">
                                             <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="text-2xl font-black text-slate-800 tracking-tight">{c.name}</h3>
+                                                <h3 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">{c.name}</h3>
                                                 {!c.isActive && (
-                                                    <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-md uppercase">Inactivo</span>
+                                                    <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-[10px] font-bold rounded-md uppercase">Inactivo</span>
                                                 )}
                                             </div>
-                                            <p className="text-slate-500 text-sm line-clamp-2 leading-relaxed min-h-[40px]">
+                                            <p className="text-slate-500 dark:text-slate-400 text-sm line-clamp-2 leading-relaxed min-h-[40px]">
                                                 {c.description || 'Sin descripción disponible para esta categoría.'}
                                             </p>
                                         </div>
 
-                                        <div className="mt-auto pt-6 border-t border-indigo-50/50">
+                                        <div className="mt-auto pt-6 border-t border-indigo-50/50 dark:border-slate-700/50">
                                             <div className="flex justify-between items-center mb-4">
-                                                <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">
+                                                <h4 className="text-[10px] font-black text-indigo-400 dark:text-indigo-300 uppercase tracking-[0.2em]">
                                                     Subcategorías ({c.subcategories?.length || 0})
                                                 </h4>
                                             </div>
@@ -248,16 +248,16 @@ export default function CategoryListPage() {
                                                 {c.subcategories && c.subcategories.length > 0 ? (
                                                     c.subcategories.slice(0, 4).map(s => (
                                                         <div key={s.id} className="group/sub relative">
-                                                            <span className="px-3 py-1.5 bg-indigo-50/50 text-indigo-600 rounded-lg text-xs font-bold border border-indigo-100 flex items-center gap-2 hover:bg-indigo-600 hover:text-white transition-all cursor-default">
+                                                            <span className="px-3 py-1.5 bg-indigo-50/50 dark:bg-slate-900/40 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-bold border border-indigo-100 dark:border-slate-800 flex items-center gap-2 hover:bg-indigo-600 hover:text-white transition-all cursor-default">
                                                                 {s.name}
                                                             </span>
                                                         </div>
                                                     ))
                                                 ) : (
-                                                    <span className="text-xs text-slate-400 italic">No hay subcategorías</span>
+                                                    <span className="text-xs text-slate-400 dark:text-slate-500 italic">No hay subcategorías</span>
                                                 )}
                                                 {c.subcategories && c.subcategories.length > 4 && (
-                                                    <span className="px-2 py-1.5 bg-slate-100 text-slate-500 rounded-lg text-xs font-bold border border-slate-200">
+                                                    <span className="px-2 py-1.5 bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-800">
                                                         +{c.subcategories.length - 4}
                                                     </span>
                                                 )}
@@ -268,35 +268,33 @@ export default function CategoryListPage() {
                                                     toggleRow(c.id);
                                                     setActiveCategoryId(c.id);
                                                 }}
-                                                className="w-full mt-6 py-3 bg-slate-50 text-indigo-600 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all duration-300 shadow-sm flex items-center justify-center gap-2 border border-indigo-50"
+                                                className="w-full mt-6 py-3 bg-slate-50 dark:bg-slate-900/80 text-indigo-600 dark:text-indigo-400 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white transition-all duration-300 shadow-sm flex items-center justify-center gap-2 border border-indigo-50 dark:border-slate-850 cursor-pointer"
                                             >
                                                 <Plus size={14} /> Gestionar Subcategorías
                                             </button>
-                                        </div>
-
-                                        {/* Expanded Subcategories overlay/list */}
+                                                                        {/* Expanded Subcategories overlay/list */}
                                         {expandedRows.includes(c.id) && (
-                                            <div className="absolute inset-0 z-10 bg-white/95 backdrop-blur-md p-8 animate-fade-in flex flex-col">
+                                            <div className="absolute inset-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-8 animate-fade-in flex flex-col">
                                                 <div className="flex justify-between items-center mb-6">
-                                                    <h3 className="text-xl font-bold text-slate-800">Subcategorías: {c.name}</h3>
-                                                    <button onClick={() => toggleRow(c.id)} className="p-2 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-xl transition-colors">
+                                                    <h3 className="text-xl font-bold text-slate-800 dark:text-white">Subcategorías: {c.name}</h3>
+                                                    <button onClick={() => toggleRow(c.id)} className="p-2 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 rounded-xl transition-colors cursor-pointer">
                                                         <X size={20} />
                                                     </button>
                                                 </div>
                                                 <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
                                                     {c.subcategories?.map(s => (
-                                                        <div key={s.id} className="flex items-center justify-between p-3 bg-indigo-50/30 rounded-xl border border-indigo-100 group/subitem">
-                                                            <span className="text-sm font-semibold text-slate-700">{s.name}</span>
+                                                        <div key={s.id} className="flex items-center justify-between p-3 bg-indigo-50/30 dark:bg-slate-800/40 rounded-xl border border-indigo-100 dark:border-slate-850 group/subitem">
+                                                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{s.name}</span>
                                                             <div className="flex gap-2">
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); openSubEdit(s); }}
-                                                                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all"
+                                                                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-750 rounded-lg transition-all cursor-pointer"
                                                                 >
                                                                     <Edit2 size={14} />
                                                                 </button>
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); handleSubDeleteClick(s.id); }}
-                                                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-white rounded-lg transition-all"
+                                                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-white dark:hover:bg-slate-750 rounded-lg transition-all cursor-pointer"
                                                                 >
                                                                     <Trash2 size={14} />
                                                                 </button>
@@ -305,13 +303,13 @@ export default function CategoryListPage() {
                                                     ))}
                                                     <button
                                                         onClick={() => openSubAdd(c.id)}
-                                                        className="w-full p-4 border-2 border-dashed border-indigo-200 rounded-xl text-indigo-600 hover:bg-indigo-50 transition-all font-bold text-sm flex items-center justify-center gap-2"
+                                                        className="w-full p-4 border-2 border-dashed border-indigo-200 dark:border-slate-750 rounded-xl text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-800 transition-all font-bold text-sm flex items-center justify-center gap-2 cursor-pointer"
                                                     >
                                                         <Plus size={18} /> Nueva Subcategoría
                                                     </button>
                                                 </div>
                                             </div>
-                                        )}
+                                        )}                  )}
                                     </div>
                                 ))}
                             </div>
@@ -320,20 +318,20 @@ export default function CategoryListPage() {
 
                     {/* Pagination Controls */}
                     {!loading && totalPages > 1 && (
-                        <div className="px-8 py-6 bg-slate-50/50 border-t border-indigo-50/50 flex flex-col md:flex-row items-center justify-between gap-4">
-                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-white/50 px-4 py-2 rounded-xl border border-indigo-50/50">
-                                Mostrando <span className="text-indigo-600">{categories.length}</span> de <span className="text-indigo-950">{totalItems}</span> categorías
+                        <div className="px-8 py-6 bg-slate-50/50 dark:bg-slate-900/50 border-t border-indigo-50/50 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+                            <div className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-white/50 dark:bg-slate-800/50 px-4 py-2 rounded-xl border border-indigo-50/50 dark:border-slate-700/50">
+                                Mostrando <span className="text-indigo-600 dark:text-indigo-400">{categories.length}</span> de <span className="text-indigo-950 dark:text-white">{totalItems}</span> categorías
                             </div>
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                     disabled={currentPage === 1}
-                                    className="p-3 rounded-2xl border border-indigo-100 bg-white text-slate-400 hover:bg-indigo-600 hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-slate-400 transition-all shadow-md active:scale-95"
+                                    className="p-3 rounded-2xl border border-indigo-100 dark:border-slate-750 bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-200 hover:bg-indigo-600 hover:text-white disabled:opacity-30 disabled:hover:bg-white dark:disabled:hover:bg-slate-800 disabled:hover:text-slate-400 transition-all shadow-md active:scale-95 cursor-pointer"
                                 >
                                     <ChevronLeft size={20} />
                                 </button>
 
-                                <div className="flex items-center px-6 bg-white border border-indigo-100 rounded-2xl font-black text-xs text-indigo-600 shadow-md">
+                                <div className="flex items-center px-6 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-750 rounded-2xl font-black text-xs text-indigo-600 dark:text-indigo-400 shadow-md">
                                     Página {currentPage} de {totalPages}
                                 </div>
 
