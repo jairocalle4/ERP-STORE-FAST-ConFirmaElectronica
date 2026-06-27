@@ -272,7 +272,9 @@ export default function CategoryListPage() {
                                             >
                                                 <Plus size={14} /> Gestionar Subcategorías
                                             </button>
-                                                                        {/* Expanded Subcategories overlay/list */}
+                                        </div>
+
+                                        {/* Expanded Subcategories overlay/list */}
                                         {expandedRows.includes(c.id) && (
                                             <div className="absolute inset-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-8 animate-fade-in flex flex-col">
                                                 <div className="flex justify-between items-center mb-6">
@@ -309,7 +311,7 @@ export default function CategoryListPage() {
                                                     </button>
                                                 </div>
                                             </div>
-                                        )}                  )}
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -338,7 +340,7 @@ export default function CategoryListPage() {
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                     disabled={currentPage === totalPages}
-                                    className="p-3 rounded-2xl border border-indigo-100 bg-white text-slate-400 hover:bg-indigo-600 hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-slate-400 transition-all shadow-md active:scale-95"
+                                    className="p-3 rounded-2xl border border-indigo-100 dark:border-slate-750 bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-200 hover:bg-indigo-600 hover:text-white disabled:opacity-30 disabled:hover:bg-white dark:disabled:hover:bg-slate-800 disabled:hover:text-slate-400 transition-all shadow-md active:scale-95 cursor-pointer"
                                 >
                                     <ChevronRight size={20} />
                                 </button>

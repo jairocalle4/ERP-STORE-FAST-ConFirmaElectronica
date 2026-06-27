@@ -269,7 +269,7 @@ public class ElectronicBillingService : IElectronicBillingService
             {
                 ambiente = company.SriEnvironment ?? "1",
                 secuencial = secuencialPayload,
-                fechaEmision = sale.Date.ToString("dd/MM/yyyy"),
+                fechaEmision = sale.Date.AddHours(-5).ToString("dd/MM/yyyy"),
                 emisor = new
                 {
                     ruc = company.Ruc?.Length == 10 ? company.Ruc + "001" : company.Ruc,

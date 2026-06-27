@@ -172,7 +172,7 @@ public static class RidePdfGenerator
                 row.RelativeItem().Text(t =>
                 {
                     t.Span("Fecha Emisión: ").Bold();
-                    t.Span(sale.Date.ToString("dd/MM/yyyy"));
+                    t.Span(sale.Date.AddHours(-5).ToString("dd/MM/yyyy"));
                 });
 
                 if (!string.IsNullOrEmpty(sale.Client?.Address))
