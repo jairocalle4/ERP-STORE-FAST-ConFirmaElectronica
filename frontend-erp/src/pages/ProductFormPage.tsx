@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../services/api';
-import { ArrowLeft, Save, Loader2, Plus, Trash2, PlayCircle, Image as ImageIcon, Star, Info } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Plus, Trash2, PlayCircle, Image as ImageIcon, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { GlassCard } from '../components/common/GlassCard';
 import { useNotificationStore } from '../store/useNotificationStore';
@@ -59,6 +59,104 @@ export default function ProductFormPage() {
     const [images, setImages] = useState<ProductImage[]>([]);
     const [newImageUrl, setNewImageUrl] = useState('');
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
+    const [uploading, setUploading] = useState(false);
+    const [showUrlInput, setShowUrlInput] = useState(false);
+    const [uploadingVideo, setUploadingVideo] = useState(false);
+    const [showVideoUrlInput, setShowVideoUrlInput] = useState(false);
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+        
+        if (images.length >= 6) {
+            addNotification('Máximo 6 imágenes permitidas', 'error');
+            return;
+        }
+
+        const file = files[0];
+        const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+        if (!validTypes.includes(file.type)) {
+            addNotification('Tipo de archivo no permitido. Solo se aceptan imágenes (JPG, PNG, WEBP)', 'error');
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            addNotification('La imagen es demasiado grande. Máximo 5MB', 'error');
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const formDataUpload = new FormData();
+            formDataUpload.append('file', file);
+
+            const res = await api.post('/media/upload-image', formDataUpload, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            const uploadedUrl = res.data?.url;
+            if (uploadedUrl) {
+                const isFirst = images.length === 0;
+                setImages([...images, { url: uploadedUrl, isCover: isFirst, order: images.length }]);
+                addNotification('Imagen subida correctamente');
+            } else {
+                addNotification('No se recibió la URL de la imagen subida', 'error');
+            }
+        } catch (err: any) {
+            console.error('Error uploading image to Cloudinary', err);
+            const errMsg = err.response?.data?.message || err.message || 'Error al conectar con el servidor de medios';
+            addNotification(`No se pudo subir la imagen: ${errMsg}`, 'error');
+        } finally {
+            setUploading(false);
+            e.target.value = '';
+        }
+    };
+
+    const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        const file = files[0];
+        const validTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
+        if (!validTypes.includes(file.type)) {
+            addNotification('Tipo de archivo no permitido. Solo se aceptan videos (MP4, WEBM, MOV)', 'error');
+            return;
+        }
+
+        if (file.size > 20 * 1024 * 1024) {
+            addNotification('El video es demasiado grande. Máximo 20MB', 'error');
+            return;
+        }
+
+        setUploadingVideo(true);
+        try {
+            const formDataUpload = new FormData();
+            formDataUpload.append('file', file);
+
+            const res = await api.post('/media/upload-video', formDataUpload, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            const uploadedUrl = res.data?.url;
+            if (uploadedUrl) {
+                setFormData(prev => ({ ...prev, videoUrl: uploadedUrl }));
+                addNotification('Video subido correctamente');
+            } else {
+                addNotification('No se recibió la URL del video subido', 'error');
+            }
+        } catch (err: any) {
+            console.error('Error uploading video to Cloudinary', err);
+            const errMsg = err.response?.data?.message || err.message || 'Error al conectar con el servidor de medios';
+            addNotification(`No se pudo subir el video: ${errMsg}`, 'error');
+        } finally {
+            setUploadingVideo(false);
+            e.target.value = '';
+        }
+    };
 
     // Modals for quick creation
     const [catModalOpen, setCatModalOpen] = useState(false);
@@ -503,27 +601,62 @@ export default function ProductFormPage() {
                                 </h2>
 
                                 <div className="mb-4">
-                                    <label className="block text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Agregar URL de Imagen</label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="url"
-                                            placeholder="https://ejemplo.com/imagen.jpg"
-                                            className="flex-1 px-3 py-2 bg-white/50 border border-indigo-100 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/30 outline-none"
-                                            value={newImageUrl}
-                                            onChange={e => setNewImageUrl(e.target.value)}
-                                            onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addImage())}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={addImage}
-                                            className="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="block text-xs font-bold text-indigo-400 dark:text-indigo-300 uppercase tracking-wider">Imágenes</label>
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setShowUrlInput(!showUrlInput)}
+                                            className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 underline font-semibold"
                                         >
-                                            <Plus size={20} />
+                                            {showUrlInput ? 'Subir desde Archivo' : 'Agregar desde URL externa'}
                                         </button>
                                     </div>
-                                    <p className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
-                                        <Info size={10} /> Pega el link directo de la imagen
-                                    </p>
+
+                                    {showUrlInput ? (
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="url"
+                                                placeholder="https://ejemplo.com/imagen.jpg"
+                                                className="flex-1 px-3 py-2 bg-white/50 dark:bg-slate-900/50 border border-indigo-100 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/30 outline-none dark:text-white"
+                                                value={newImageUrl}
+                                                onChange={e => setNewImageUrl(e.target.value)}
+                                                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addImage())}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={addImage}
+                                                className="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                                            >
+                                                <Plus size={20} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="relative border-2 border-dashed border-indigo-200 dark:border-slate-700 rounded-xl p-5 text-center hover:border-indigo-400 hover:bg-indigo-50/20 dark:hover:bg-slate-800/20 transition-all cursor-pointer group">
+                                            <input 
+                                                type="file" 
+                                                accept="image/*"
+                                                onChange={handleFileUpload}
+                                                disabled={uploading || images.length >= 6}
+                                                className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                                            />
+                                            {uploading ? (
+                                                <div className="flex flex-col items-center justify-center py-2">
+                                                    <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mb-1" />
+                                                    <p className="text-xs font-medium text-indigo-900/70 dark:text-slate-350">Subiendo a Cloudinary...</p>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center py-1">
+                                                    <ImageIcon className="w-8 h-8 text-indigo-400 group-hover:text-indigo-600 transition-colors mb-1" />
+                                                    <p className="text-xs font-semibold text-indigo-900/70 dark:text-slate-200">
+                                                        Haga clic para buscar o arrastre aquí
+                                                    </p>
+                                                    <p className="text-[10px] text-slate-400">
+                                                        Max 5MB (JPG, PNG, WEBP)
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-indigo-200">
@@ -555,18 +688,71 @@ export default function ProductFormPage() {
                                     )}
                                 </div>
 
-                                <div className="mt-6 border-t border-indigo-50 pt-4">
-                                    <label className="block text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Video Promocional (URL)</label>
-                                    <div className="flex gap-2">
-                                        <div className="p-2 bg-indigo-50 rounded-lg text-indigo-400"><PlayCircle size={20} /></div>
-                                        <input
-                                            type="url"
-                                            value={formData.videoUrl}
-                                            onChange={e => setFormData({ ...formData, videoUrl: e.target.value })}
-                                            className="w-full px-3 py-2 bg-white/50 border border-indigo-100 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/30 outline-none"
-                                            placeholder="https://youtube.com/..."
-                                        />
+                                <div className="mt-6 border-t border-indigo-50 dark:border-slate-800 pt-4">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="block text-xs font-bold text-indigo-400 dark:text-indigo-300 uppercase tracking-wider">Video Promocional</label>
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setShowVideoUrlInput(!showVideoUrlInput)}
+                                            className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 underline font-semibold"
+                                        >
+                                            {showVideoUrlInput ? 'Subir Video desde Archivo' : 'Agregar desde URL externa'}
+                                        </button>
                                     </div>
+
+                                    {showVideoUrlInput ? (
+                                        <div className="flex gap-2">
+                                            <div className="p-2 bg-indigo-50 dark:bg-slate-800 rounded-lg text-indigo-400 dark:text-indigo-350"><PlayCircle size={20} /></div>
+                                            <input
+                                                type="url"
+                                                value={formData.videoUrl}
+                                                onChange={e => setFormData({ ...formData, videoUrl: e.target.value })}
+                                                className="w-full px-3 py-2 bg-white/50 border border-indigo-100 dark:border-slate-800 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/30 outline-none dark:text-white"
+                                                placeholder="https://youtube.com/..."
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="relative border-2 border-dashed border-indigo-200 dark:border-slate-700 rounded-xl p-4 text-center hover:border-indigo-400 hover:bg-indigo-50/20 dark:hover:bg-slate-800/20 transition-all cursor-pointer group">
+                                            <input 
+                                                type="file" 
+                                                accept="video/*"
+                                                onChange={handleVideoUpload}
+                                                disabled={uploadingVideo}
+                                                className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                                            />
+                                            {uploadingVideo ? (
+                                                <div className="flex flex-col items-center justify-center py-2">
+                                                    <Loader2 className="w-6 h-6 text-indigo-600 animate-spin mb-1" />
+                                                    <p className="text-xs font-medium text-indigo-900/70 dark:text-slate-350">Subiendo video...</p>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center py-1">
+                                                    <PlayCircle className="w-6 h-6 text-indigo-400 group-hover:text-indigo-600 transition-colors mb-1" />
+                                                    <p className="text-xs font-semibold text-indigo-900/70 dark:text-slate-200">
+                                                        {formData.videoUrl ? 'Cambiar Video / Subir nuevo' : 'Haga clic para buscar o arrastre video'}
+                                                    </p>
+                                                    <p className="text-[10px] text-slate-400">
+                                                        Max 20MB (MP4, WEBM)
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {formData.videoUrl && (
+                                        <div className="mt-2 p-2 bg-indigo-50/30 dark:bg-slate-800/30 rounded-lg border border-indigo-100 dark:border-slate-800/50 flex items-center justify-between">
+                                            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 truncate max-w-[200px]" title={formData.videoUrl}>
+                                                {formData.videoUrl}
+                                            </span>
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setFormData({ ...formData, videoUrl: '' })}
+                                                className="text-[10px] font-bold text-rose-500 hover:underline"
+                                            >
+                                                Eliminar Video
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </GlassCard>
 
