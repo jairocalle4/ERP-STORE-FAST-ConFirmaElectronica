@@ -378,6 +378,72 @@ public class ElectronicBillingService : IElectronicBillingService
                     errMsg = errorProp.GetString() ?? errMsg;
                 }
 
+                // FALLBACK CHECK: If key is already registered, query authorization status
+                string? fallbackAccessKey = doc.RootElement.TryGetProperty("claveAcceso", out var fallbackClaveProp) ? fallbackClaveProp.GetString() : null;
+                if (string.IsNullOrEmpty(fallbackAccessKey))
+                {
+                    fallbackAccessKey = sale.AccessKey;
+                }
+
+                if (!string.IsNullOrEmpty(fallbackAccessKey) && errMsg.Contains("CLAVE ACCESO REGISTRADA", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        Console.WriteLine($"[SRI-FALLBACK] Clave registrada encontrada. Consultando autorización en SRI para: {fallbackAccessKey}");
+                        
+                        using var queryClient = _httpClientFactory.CreateClient();
+                        queryClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                        
+                        var queryResponse = await queryClient.GetAsync($"{baseUrl}/sri/autorizar/{fallbackAccessKey}");
+                        if (queryResponse.IsSuccessStatusCode)
+                        {
+                            var queryJson = await queryResponse.Content.ReadAsStringAsync();
+                            Console.WriteLine($"[SRI-FALLBACK] Response: {queryJson}");
+                            using var queryDoc = JsonDocument.Parse(queryJson);
+                            
+                            bool querySuccess = false;
+                            if (queryDoc.RootElement.TryGetProperty("success", out var querySuccessProp))
+                            {
+                                querySuccess = querySuccessProp.GetBoolean();
+                            }
+                            
+                            string? estado = queryDoc.RootElement.TryGetProperty("estado", out var estadoProp) ? estadoProp.GetString() : null;
+                            
+                            if (querySuccess || estado == "AUTORIZADO")
+                            {
+                                var fallbackAuthNumber = queryDoc.RootElement.TryGetProperty("numeroAutorizacion", out var fallbackAuthProp) ? fallbackAuthProp.GetString() : null;
+                                
+                                sale.AccessKey = fallbackAccessKey;
+                                sale.AuthorizationNumber = fallbackAuthNumber ?? fallbackAccessKey;
+                                sale.AuthorizationDate = DateTime.UtcNow;
+                                sale.ElectronicStatus = "AUTORIZADO";
+                                sale.IsElectronic = true;
+                                sale.SriErrorMessage = null;
+                                
+                                await _context.SaveChangesAsync();
+                                
+                                // Enviar correo automático
+                                var fallbackEmailResult = await TrySendInvoiceEmailAsync(sale, company);
+                                
+                                return new ElectronicBillingResult
+                                {
+                                    Success = true,
+                                    Status = "AUTORIZADO",
+                                    AccessKey = fallbackAccessKey,
+                                    AuthorizationNumber = fallbackAuthNumber ?? fallbackAccessKey,
+                                    AuthorizationDate = sale.AuthorizationDate,
+                                    EmailSent = fallbackEmailResult.Success,
+                                    EmailError = fallbackEmailResult.Error
+                                };
+                            }
+                        }
+                    }
+                    catch (Exception fallbackEx)
+                    {
+                        Console.WriteLine($"[SRI-FALLBACK-ERROR] Error consultando estado alternativo: {fallbackEx.Message}");
+                    }
+                }
+
                 sale.ElectronicStatus = "ERROR";
                 sale.IsElectronic = true;
                 sale.SriErrorMessage = errMsg;
