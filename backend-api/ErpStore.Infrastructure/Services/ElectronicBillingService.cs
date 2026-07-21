@@ -234,11 +234,16 @@ public class ElectronicBillingService : IElectronicBillingService
 
         try
         {
-            if (company.ElectronicSignatureFile != null)
+            if (company.ElectronicSignatureFile != null && company.ElectronicSignatureFile.Length > 0)
             {
-                var certsDir = @"C:\Users\Admin\Desktop\JAIRO\PROYECTOS\certs";
-                if (!System.IO.Directory.Exists(certsDir)) System.IO.Directory.CreateDirectory(certsDir);
-                Console.WriteLine($"[CERT_PWD] {company.ElectronicSignaturePassword}");
+                try
+                {
+                    await SyncCertificateAsync(company);
+                }
+                catch (Exception syncEx)
+                {
+                    Console.WriteLine($"[CERT-SYNC-WARN] Auto-sync certificate failed: {syncEx.Message}");
+                }
             }
 
             // 1. Asignar el número de factura si aún no tiene el formato SRI

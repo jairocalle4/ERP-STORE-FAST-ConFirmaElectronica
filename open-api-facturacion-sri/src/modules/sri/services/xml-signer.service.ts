@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'fs';
 import * as path from 'path';
 import { join } from 'path';
 import * as forge from 'node-forge';
@@ -15,6 +15,7 @@ import { STORAGE_PATHS } from '../../../common/utils/storage-paths';
 interface EmisorCertificado {
   certificado_nombre: string;
   certificado_password_encrypted: string;
+  certificado_p12?: Buffer;
 }
 
 /**
@@ -302,9 +303,9 @@ export class XmlSignerService implements OnModuleInit {
 
     this.logger.log(`Cargando certificado desde BD para emisor RUC: ${ruc}`);
 
-    // Get certificate info from database
+    // Get certificate info from database including binary P12
     const emisor = await this.db.queryOne<EmisorCertificado>(
-      `SELECT certificado_nombre, certificado_password_encrypted 
+      `SELECT certificado_nombre, certificado_password_encrypted, certificado_p12 
        FROM emisores 
        WHERE ruc = $1 AND estado = 'ACTIVO'`,
       [ruc],
@@ -325,15 +326,33 @@ export class XmlSignerService implements OnModuleInit {
       emisor.certificado_password_encrypted,
     );
 
-    // Load certificate from filesystem
+    // Load certificate from filesystem or restore from database
     const certPath = join(this.getCertsDir(), emisor.certificado_nombre);
-    if (!existsSync(certPath)) {
+    let p12Buffer: Buffer;
+
+    if (existsSync(certPath)) {
+      p12Buffer = readFileSync(certPath);
+    } else if (emisor.certificado_p12) {
+      this.logger.log(
+        `Restaurando archivo .p12 desde la base de datos PostgreSQL para RUC ${ruc} en: ${certPath}`,
+      );
+      p12Buffer = Buffer.from(emisor.certificado_p12);
+      try {
+        const certsDir = this.getCertsDir();
+        if (!existsSync(certsDir)) {
+          mkdirSync(certsDir, { recursive: true });
+        }
+        writeFileSync(certPath, p12Buffer);
+      } catch (err) {
+        this.logger.warn(
+          `No se pudo escribir el archivo .p12 en disco (${(err as Error).message}), continuando usando el buffer en memoria.`,
+        );
+      }
+    } else {
       throw new Error(
-        `El archivo de certificado ${emisor.certificado_nombre} no existe en el servidor.`,
+        `El archivo de certificado ${emisor.certificado_nombre} no existe en el servidor ni en la base de datos. Por favor vuelva a subir su firma en la configuración.`,
       );
     }
-
-    const p12Buffer = readFileSync(certPath);
 
     // Process P12 certificate
     const p12Der = forge.util.createBuffer(p12Buffer.toString('binary'));
