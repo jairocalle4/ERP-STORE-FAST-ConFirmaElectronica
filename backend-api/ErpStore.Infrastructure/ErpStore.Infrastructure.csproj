@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ErpStore.Application\ErpStore.Application.csproj" />
+    <ProjectReference Include="..\..\modules\ElectronicBilling\src\ElectronicBilling.Core\ElectronicBilling.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,8 +23,8 @@
     <!-- Facturación Electrónica SRI -->
     <PackageReference Include="QuestPDF" Version="2025.3.0" />
     <PackageReference Include="QRCoder" Version="1.6.0" />
-    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="9.0.0" />
-    <PackageReference Include="System.Security.Cryptography.Xml" Version="9.0.0" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.10" />
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.10" />
     <PackageReference Include="System.ServiceModel.Http" Version="8.1.2" />
     <PackageReference Include="System.ServiceModel.Primitives" Version="8.1.2" />
   </ItemGroup>
