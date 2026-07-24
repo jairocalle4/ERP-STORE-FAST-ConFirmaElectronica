@@ -2,7 +2,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ErpStore.Application\ErpStore.Application.csproj" />
-    <ProjectReference Include="..\..\modules\ElectronicBilling\src\ElectronicBilling.Core\ElectronicBilling.Core.csproj" />
+    <ProjectReference Include="..\modules\ElectronicBilling\src\ElectronicBilling.Core\ElectronicBilling.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="modules\**" />
+    <EmbeddedResource Remove="modules\**" />
+    <None Remove="modules\**" />
   </ItemGroup>
 
   <ItemGroup>

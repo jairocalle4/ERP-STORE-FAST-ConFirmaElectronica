@@ -6,6 +6,7 @@ COPY ["ErpStore.Api.csproj", "./"]
 COPY ["ErpStore.Application/ErpStore.Application.csproj", "ErpStore.Application/"]
 COPY ["ErpStore.Domain/ErpStore.Domain.csproj", "ErpStore.Domain/"]
 COPY ["ErpStore.Infrastructure/ErpStore.Infrastructure.csproj", "ErpStore.Infrastructure/"]
+COPY ["modules/ElectronicBilling/src/ElectronicBilling.Core/ElectronicBilling.Core.csproj", "modules/ElectronicBilling/src/ElectronicBilling.Core/"]
 RUN dotnet restore "ErpStore.Api.csproj"
 
 # Copy everything else and build

@@ -22,12 +22,15 @@
     <Compile Remove="ErpStore.Domain\**" />
     <Compile Remove="ErpStore.Application\**" />
     <Compile Remove="ErpStore.Infrastructure\**" />
+    <Compile Remove="modules\**" />
     <EmbeddedResource Remove="ErpStore.Domain\**" />
     <EmbeddedResource Remove="ErpStore.Application\**" />
     <EmbeddedResource Remove="ErpStore.Infrastructure\**" />
+    <EmbeddedResource Remove="modules\**" />
     <None Remove="ErpStore.Domain\**" />
     <None Remove="ErpStore.Application\**" />
     <None Remove="ErpStore.Infrastructure\**" />
+    <None Remove="modules\**" />
   </ItemGroup>
 
   <ItemGroup>
