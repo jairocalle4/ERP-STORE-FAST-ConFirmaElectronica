@@ -44,21 +44,31 @@ public class ReportsController : ControllerBase
                 .Where(e => e.Date >= start && e.Date <= end)
                 .SumAsync(e => (decimal?)e.Amount) ?? 0;
 
-            var totalRevenue = salesData.Sum(s => s.Total);
+            // Transacciones manuales de caja (ej. copias, servicios pequeños, egresos de caja)
+            var manualTransactions = await _context.CashTransactions
+                .Where(t => t.Date >= start && t.Date <= end)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var manualIncome = manualTransactions.Where(t => t.Type == "Income").Sum(t => t.Amount);
+            var manualExpense = manualTransactions.Where(t => t.Type == "Expense").Sum(t => t.Amount);
+
+            var totalRevenue = salesData.Sum(s => s.Total) + manualIncome;
             var totalCost = salesData.Sum(s => s.CostTotal);
 
             var grossProfit = totalRevenue - totalCost;
-            var netProfit = grossProfit - expenses;
+            var totalExpenses = expenses + manualExpense;
+            var netProfit = grossProfit - totalExpenses;
 
             return new KpiStatsDto
             {
                 TotalRevenue = totalRevenue,
                 TotalCost = totalCost,
                 GrossProfit = grossProfit,
-                TotalExpenses = expenses,
+                TotalExpenses = totalExpenses,
                 NetProfit = netProfit,
                 TotalTransactions = salesData.Count,
-                AverageTicket = salesData.Count > 0 ? totalRevenue / salesData.Count : 0
+                AverageTicket = salesData.Count > 0 ? salesData.Sum(s => s.Total) / salesData.Count : 0
             };
         }
         catch (Exception ex)
@@ -92,34 +102,48 @@ public class ReportsController : ControllerBase
                 .AsNoTracking()
                 .ToListAsync();
 
+            var manualData = await _context.CashTransactions
+                .Where(t => t.Date >= start && t.Date <= end)
+                .GroupBy(t => t.Date.Date)
+                .Select(g => new { 
+                    Date = g.Key, 
+                    Income = g.Where(t => t.Type == "Income").Sum(t => t.Amount),
+                    Expense = g.Where(t => t.Type == "Expense").Sum(t => t.Amount)
+                })
+                .AsNoTracking()
+                .ToListAsync();
+
             var allDates = salesData.Select(s => s.Date)
                 .Union(expensesData.Select(e => e.Date))
+                .Union(manualData.Select(m => m.Date))
                 .Distinct()
                 .OrderBy(d => d)
                 .ToList();
 
-            var result = new List<SalesTrendDto>();
-            foreach (var date in allDates)
-            {
-                var revenue = salesData.FirstOrDefault(s => s.Date == date)?.Revenue ?? 0;
-                var expense = expensesData.FirstOrDefault(e => e.Date == date)?.Expense ?? 0;
-                
-                result.Add(new SalesTrendDto
+            var trendList = allDates.Select(date => {
+                var s = salesData.FirstOrDefault(x => x.Date == date);
+                var e = expensesData.FirstOrDefault(x => x.Date == date);
+                var m = manualData.FirstOrDefault(x => x.Date == date);
+
+                var rev = (s?.Revenue ?? 0) + (m?.Income ?? 0);
+                var exp = (e?.Expense ?? 0) + (m?.Expense ?? 0);
+
+                return new SalesTrendDto
                 {
                     Date = date,
-                    Period = date.ToString("dd/MM"),
-                    Revenue = revenue,
-                    Expenses = expense,
-                    NetProfit = revenue - expense
-                });
-            }
+                    Period = date.ToString("dd MMM", new CultureInfo("es-EC")),
+                    Revenue = rev,
+                    Expenses = exp,
+                    NetProfit = rev - exp
+                };
+            });
 
-            return result;
+            return Ok(trendList);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting sales trend");
-             return StatusCode(500, "Internal Server Error during Trend calculation");
+            return StatusCode(500, "Internal Server Error");
         }
     }
 

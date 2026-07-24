@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import {
     FileText, TrendingUp, Package, DollarSign, Calendar,
-    ArrowDownRight, CreditCard, Activity, Download, Loader2
+    ArrowDownRight, CreditCard, Activity, Download, Loader2, Info, X
 } from 'lucide-react';
 import { GlassCard } from '../components/common/GlassCard';
 import {
@@ -37,6 +37,17 @@ export default function ReportsPage() {
 
     const [activeTab, setActiveTab] = useState<'financial' | 'inventory' | 'details'>('financial');
     const [isExportingPDF, setIsExportingPDF] = useState(false);
+
+    // Modal explicativo de tarjetas KPI
+    const [selectedKpiInfo, setSelectedKpiInfo] = useState<{
+        title: string;
+        subtitle: string;
+        formula: string;
+        meaning: string;
+        resultExplanation: string;
+        badgeColor: string;
+        icon: any;
+    } | null>(null);
 
     useEffect(() => {
         fetchData();
@@ -386,40 +397,87 @@ export default function ReportsPage() {
             {/* KPI Cards */}
             {kpi && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Fixed Card Background - Using standard div instead of GlassCard to ensure gradient is visible */}
-                    <div className="rounded-2xl p-5 bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/30 transition-transform hover:-translate-y-1 duration-300">
+                    {/* Ingresos Totales */}
+                    <div className="rounded-2xl p-5 bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/30 transition-transform hover:-translate-y-1 duration-300 relative group">
                         <div className="flex justify-between items-start mb-4">
                             <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
                                 <DollarSign size={20} className="text-white" />
                             </div>
-                            <span className="bg-white/20 text-xs font-bold px-2 py-1 rounded-lg backdrop-blur-sm">+100%</span>
+                            <button
+                                onClick={() => setSelectedKpiInfo({
+                                    title: 'Ingresos Totales',
+                                    subtitle: 'Ventas de Productos + Ingresos de Servicios',
+                                    formula: 'Ventas Totales + Ingresos Manuales de Caja (Copias/Trabajos)',
+                                    meaning: 'Es la cantidad total bruta de dinero recaudada por tu negocio en ventas de productos y cobro de servicios en el período seleccionado, antes de descontar compras o gastos.',
+                                    resultExplanation: `En este período el negocio ha generado un total de ${formatCurrency(kpi.totalRevenue)} en ingresos brutos.`,
+                                    badgeColor: 'bg-indigo-600',
+                                    icon: DollarSign
+                                })}
+                                title="¿Cómo se calcula este valor?"
+                                className="p-1.5 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-sm transition-all"
+                            >
+                                <Info size={16} />
+                            </button>
                         </div>
                         <p className="text-indigo-100 text-sm font-medium mb-1">Ingresos Totales</p>
                         <h3 className="text-3xl font-black">{formatCurrency(kpi.totalRevenue)}</h3>
                     </div>
 
-                    <GlassCard className="p-5 border-0">
+                    {/* Ganancia Bruta */}
+                    <GlassCard className="p-5 border-0 relative">
                         <div className="flex justify-between items-start mb-4">
                             <div className="p-2 bg-emerald-100 rounded-xl">
                                 <TrendingUp size={20} className="text-emerald-600" />
                             </div>
+                            <button
+                                onClick={() => setSelectedKpiInfo({
+                                    title: 'Ganancia Bruta',
+                                    subtitle: 'Margen Directo de Productos y Servicios',
+                                    formula: 'Ingresos Totales - Costo de Mercancía Vendida',
+                                    meaning: 'Es la ganancia directa obtenida por vender tus productos tras restar lo que costó comprarlos a los proveedores. Los ingresos por servicios (copias, trabajos) aportan 100% a la ganancia bruta porque no tienen costo de producto.',
+                                    resultExplanation: `La ganancia bruta de productos y servicios es de ${formatCurrency(kpi.grossProfit)}.`,
+                                    badgeColor: 'bg-emerald-600',
+                                    icon: TrendingUp
+                                })}
+                                title="¿Cómo se calcula este valor?"
+                                className="p-1.5 bg-slate-100 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 rounded-xl transition-all"
+                            >
+                                <Info size={16} />
+                            </button>
                         </div>
                         <p className="text-slate-400 text-sm font-bold mb-1">Ganancia Bruta</p>
                         <h3 className="text-3xl font-black text-slate-800">{formatCurrency(kpi.grossProfit)}</h3>
                         <p className="text-xs text-slate-400 mt-1">Ventas - Costo Mercancía</p>
                     </GlassCard>
 
-                    <GlassCard className="p-5 border-0">
+                    {/* Gastos Operativos */}
+                    <GlassCard className="p-5 border-0 relative">
                         <div className="flex justify-between items-start mb-4">
                             <div className="p-2 bg-rose-100 rounded-xl">
                                 <ArrowDownRight size={20} className="text-rose-600" />
                             </div>
+                            <button
+                                onClick={() => setSelectedKpiInfo({
+                                    title: 'Gastos Operativos',
+                                    subtitle: 'Costos de Mantener Abierto el Negocio',
+                                    formula: 'Gastos de Sistema (Arriendo, Luz, etc.) + Egresos Manuales de Caja',
+                                    meaning: 'Es la suma total de todo el dinero que ha salido del negocio para mantener la operación del local (alquiler, agua, luz, internet, sueldos o egresos de caja).',
+                                    resultExplanation: `Se han registrado un total de ${formatCurrency(kpi.totalExpenses)} en gastos operativos y egresos.`,
+                                    badgeColor: 'bg-rose-600',
+                                    icon: ArrowDownRight
+                                })}
+                                title="¿Cómo se calcula este valor?"
+                                className="p-1.5 bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition-all"
+                            >
+                                <Info size={16} />
+                            </button>
                         </div>
                         <p className="text-slate-400 text-sm font-bold mb-1">Gastos Operativos</p>
                         <h3 className="text-3xl font-black text-rose-600">-{formatCurrency(kpi.totalExpenses)}</h3>
                         <p className="text-xs text-slate-400 mt-1">Servicios, Alquiler, etc.</p>
                     </GlassCard>
 
+                    {/* Utilidad Neta */}
                     <GlassCard className="p-5 border-0 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-500">
                             <Activity size={100} />
@@ -428,6 +486,23 @@ export default function ReportsPage() {
                             <div className="p-2 bg-slate-900 rounded-xl">
                                 <Activity size={20} className="text-white" />
                             </div>
+                            <button
+                                onClick={() => setSelectedKpiInfo({
+                                    title: 'Utilidad Neta (Ganancia Real Libre)',
+                                    subtitle: 'Utilidad Final Disponible para el Propietario',
+                                    formula: 'Ganancia Bruta - Gastos Operativos',
+                                    meaning: 'Es la GANANCIA REAL limpia que te queda libre en el bolsillo. Muestra lo que ganó tu establecimiento tras recuperar el costo de adquisición de los productos y cubrir todos los gastos operativos del local.',
+                                    resultExplanation: kpi.netProfit >= 0
+                                        ? `¡Excelente! El negocio obtuvo una ganancia neta libre de ${formatCurrency(kpi.netProfit)} (Margen real: ${((kpi.netProfit / (kpi.totalRevenue || 1)) * 100).toFixed(1)}%).`
+                                        : `Atención: Hay un déficit de ${formatCurrency(Math.abs(kpi.netProfit))}. Los gastos superaron las ganancias en este período.`,
+                                    badgeColor: 'bg-slate-900',
+                                    icon: Activity
+                                })}
+                                title="¿Cómo se calcula este valor?"
+                                className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 rounded-xl transition-all relative z-20"
+                            >
+                                <Info size={16} />
+                            </button>
                         </div>
                         <p className="text-slate-500 text-sm font-bold mb-1 relative z-10">Utilidad Neta</p>
                         <h3 className={`text-3xl font-black relative z-10 ${kpi.netProfit >= 0 ? 'text-slate-800' : 'text-rose-600'}`}>
@@ -717,6 +792,62 @@ export default function ReportsPage() {
                         </table>
                     </div>
                 </GlassCard>
+            )}
+
+            {/* Modal Explicativo de Tarjetas KPI */}
+            {selectedKpiInfo && (
+                <div className="fixed inset-0 z-[110] bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[2.5rem] shadow-[0_30px_90px_rgba(0,0,0,0.25)] w-full max-w-lg overflow-hidden animate-scale-in border border-slate-100 p-6 md:p-8 space-y-6">
+                        <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-3 rounded-2xl text-white ${selectedKpiInfo.badgeColor} shadow-lg shadow-indigo-500/10`}>
+                                    <selectedKpiInfo.icon size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-slate-800 tracking-tight">{selectedKpiInfo.title}</h3>
+                                    <p className="text-xs font-bold text-slate-400">{selectedKpiInfo.subtitle}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setSelectedKpiInfo(null)}
+                                className="p-2 bg-slate-100 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-full transition-colors"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {/* Fórmula */}
+                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-1">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Fórmula de Cálculo:</span>
+                            <p className="text-xs font-black text-indigo-600 font-mono bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-sm">
+                                {selectedKpiInfo.formula}
+                            </p>
+                        </div>
+
+                        {/* Qué significa */}
+                        <div className="space-y-1">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">¿Qué significa esta tarjeta?</span>
+                            <p className="text-xs text-slate-600 font-medium leading-relaxed bg-slate-50/60 p-3.5 rounded-2xl border border-slate-100">
+                                {selectedKpiInfo.meaning}
+                            </p>
+                        </div>
+
+                        {/* Resultado actual */}
+                        <div className="space-y-1">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Resultado en el Período Seleccionado:</span>
+                            <div className="p-3.5 bg-indigo-50/60 border border-indigo-100 rounded-2xl text-xs font-bold text-indigo-900 leading-relaxed">
+                                {selectedKpiInfo.resultExplanation}
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => setSelectedKpiInfo(null)}
+                            className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-slate-900/10 active:scale-95"
+                        >
+                            Entendido
+                        </button>
+                    </div>
+                </div>
             )}
         </div>
     );

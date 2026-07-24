@@ -335,67 +335,105 @@ const CashRegisterPage: React.FC = () => {
 
             {/* Main Stats Summary */}
             {summary && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                    {/* Tarjeta Base */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 md:gap-6">
+                    {/* Tarjeta Base Inicial */}
                     <div className="group bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-indigo-500/5 transition-all">
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110">
-                                <Wallet size={24} />
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110">
+                                <Wallet size={20} />
                             </div>
                             <div>
-                                <p className="text-xs font-black text-slate-300 uppercase tracking-widest">Base Inicial</p>
-                                <p className="text-2xl font-black text-slate-800">${summary.openAmount.toFixed(2)}</p>
+                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Base Inicial</p>
+                                <p className="text-xl font-black text-slate-800">${summary.openAmount.toFixed(2)}</p>
                             </div>
                         </div>
                         <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
                             <div className="h-full bg-indigo-500 w-full opacity-30"></div>
                         </div>
+                        <p className="text-[10px] font-medium text-slate-400 mt-2">Monto inicial de apertura</p>
                     </div>
 
                     {/* Ventas en Efectivo */}
                     <div className="group bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-emerald-500/5 transition-all">
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110">
-                                <ArrowUpCircle size={24} />
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110">
+                                <ArrowUpCircle size={20} />
                             </div>
                             <div>
-                                <p className="text-xs font-black text-slate-300 uppercase tracking-widest">Ventas Efectivo</p>
-                                <p className="text-2xl font-black text-slate-800">+${summary.cashSales.toFixed(2)}</p>
+                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Ventas Efectivo</p>
+                                <p className="text-xl font-black text-slate-800">+${summary.cashSales.toFixed(2)}</p>
                             </div>
                         </div>
                         <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
                             <div className="h-full bg-emerald-500 w-[60%]"></div>
                         </div>
+                        <p className="text-[10px] font-medium text-slate-400 mt-2">Ventas POS registradas</p>
+                    </div>
+
+                    {/* Ingresos Manuales / Servicios */}
+                    <div className="group bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-teal-500/5 transition-all">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110">
+                                <Plus size={20} strokeWidth={3} />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Ingresos Trabajos</p>
+                                <p className="text-xl font-black text-slate-800">+${summary.manualIncome.toFixed(2)}</p>
+                            </div>
+                        </div>
+                        <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
+                            <div className="h-full bg-teal-500 w-[40%]"></div>
+                        </div>
+                        <p className="text-[10px] font-medium text-slate-400 mt-2">Copias, investigaciones, etc.</p>
                     </div>
 
                     {/* Gastos / Salidas */}
                     <div className="group bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-rose-500/5 transition-all">
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110">
-                                <ArrowDownCircle size={24} />
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110">
+                                <ArrowDownCircle size={20} />
                             </div>
                             <div>
-                                <p className="text-xs font-black text-slate-300 uppercase tracking-widest">Salidas / Gastos</p>
-                                <p className="text-2xl font-black text-slate-800">-${(summary.expenses + summary.manualExpense).toFixed(2)}</p>
+                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Salidas / Gastos</p>
+                                <p className="text-xl font-black text-rose-600">-${(summary.expenses + summary.manualExpense).toFixed(2)}</p>
                             </div>
                         </div>
                         <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
                             <div className="h-full bg-rose-500 w-[20%]"></div>
                         </div>
+                        <p className="text-[10px] font-medium text-slate-400 mt-2">Egresos y pagos de caja</p>
+                    </div>
+
+                    {/* Utilidad / Ganancia del Día */}
+                    <div className="group bg-gradient-to-br from-emerald-600 to-teal-700 p-6 rounded-[2rem] shadow-xl shadow-emerald-500/20 text-white transition-all transform hover:-translate-y-1">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 bg-white/20 text-white rounded-2xl flex items-center justify-center backdrop-blur-md">
+                                <Calculator size={20} />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-emerald-100 uppercase tracking-widest">Utilidad del Día</p>
+                                <p className="text-2xl font-black text-white">
+                                    +${((summary.cashSales + summary.manualIncome) - (summary.expenses + summary.manualExpense)).toFixed(2)}
+                                </p>
+                            </div>
+                        </div>
+                        <p className="text-[10px] font-bold text-emerald-100/80 leading-tight">
+                            Ganancia neta del día (Ventas + Trabajos - Gastos)
+                        </p>
                     </div>
 
                     {/* Balance Calculado */}
                     <div className="group bg-slate-900 p-6 rounded-[2rem] shadow-2xl shadow-slate-900/20 text-white transition-all transform hover:-translate-y-1">
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="w-12 h-12 bg-white/10 text-emerald-400 rounded-2xl flex items-center justify-center">
-                                <Coins size={24} />
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 bg-white/10 text-emerald-400 rounded-2xl flex items-center justify-center">
+                                <Coins size={20} />
                             </div>
                             <div>
-                                <p className="text-xs font-black text-white/40 uppercase tracking-widest italic">Efectivo Esperado</p>
-                                <p className="text-3xl font-black text-white tracking-tighter">${summary.calculatedBalance.toFixed(2)}</p>
+                                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest italic">Efectivo Esperado</p>
+                                <p className="text-2xl font-black text-white tracking-tighter">${summary.calculatedBalance.toFixed(2)}</p>
                             </div>
                         </div>
-                        <p className="text-[10px] font-medium text-white/50 leading-tight">Monto total que debería existir físicamente en caja ahora.</p>
+                        <p className="text-[10px] font-medium text-white/50 leading-tight">Efectivo total en cajón (Base + Ganancias)</p>
                     </div>
                 </div>
             )}
@@ -440,13 +478,28 @@ const CashRegisterPage: React.FC = () => {
                         </div>
 
                         <div className="overflow-y-auto custom-scrollbar p-8 pt-2 space-y-6">
-                            <div className="bg-slate-50 p-6 rounded-[2rem] flex items-center justify-between border border-slate-100 shrink-0">
-                                <div>
-                                    <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">Balance Esperado</span>
-                                    <span className="text-3xl font-black text-indigo-600">${summary?.calculatedBalance.toFixed(2)}</span>
+                            <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 shrink-0 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">Balance Esperado en Cajón</span>
+                                        <span className="text-3xl font-black text-indigo-600">${summary?.calculatedBalance.toFixed(2)}</span>
+                                    </div>
+                                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
+                                        <Calculator size={20} className="text-slate-400" />
+                                    </div>
                                 </div>
-                                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                                    <Calculator size={20} className="text-slate-300" />
+                                
+                                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-200/60">
+                                    <div className="p-3 bg-white rounded-xl border border-slate-200/70">
+                                        <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">Base Inicial (Apertura)</span>
+                                        <span className="font-black text-slate-700 text-sm">${summary?.openAmount.toFixed(2)}</span>
+                                    </div>
+                                    <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                                        <span className="block text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Utilidad / Ganancia del Día</span>
+                                        <span className="font-black text-emerald-700 text-sm">
+                                            +${((summary?.cashSales || 0) + (summary?.manualIncome || 0) - (summary?.expenses || 0) - (summary?.manualExpense || 0)).toFixed(2)}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -645,10 +698,16 @@ const CashRegisterPage: React.FC = () => {
                                     </div>
 
                                     {/* Valores Financieros */}
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                                         <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                                            <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Efectivo Inicial (Base)</span>
+                                            <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Base Inicial</span>
                                             <span className="text-lg font-black text-slate-700">${sessionDetails.session.openAmount.toFixed(2)}</span>
+                                        </div>
+                                        <div className="p-4 bg-emerald-50/60 border border-emerald-100 rounded-2xl">
+                                            <span className="block text-[9px] font-black text-emerald-600 uppercase tracking-wider mb-1">Utilidad en Caja</span>
+                                            <span className="text-lg font-black text-emerald-700">
+                                                +${(sessionDetails.session.calculatedAmount - sessionDetails.session.openAmount).toFixed(2)}
+                                            </span>
                                         </div>
                                         <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
                                             <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Efectivo Esperado</span>
