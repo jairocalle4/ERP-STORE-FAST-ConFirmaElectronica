@@ -3,6 +3,7 @@ using ErpStore.Infrastructure.Services;
 using ErpStore.Application.Services;
 using ErpStore.Application.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -82,6 +83,29 @@ if (app.Environment.IsDevelopment())
 
 // app.UseHttpsRedirection();
 app.UseCors("AllowAll");
+
+// Ensure DB migrations / new columns exist automatically on startup
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ErpStore.Infrastructure.Persistence.AppDbContext>();
+        db.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Migration error (fallback to raw SQL check): {ex.Message}");
+        try
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ErpStore.Infrastructure.Persistence.AppDbContext>();
+            db.Database.ExecuteSqlRaw(@"ALTER TABLE ""CashRegisterSessions"" ADD COLUMN IF NOT EXISTS ""WithdrawalAmount"" DECIMAL(18,2) NOT NULL DEFAULT 0;");
+        }
+        catch (Exception innerEx)
+        {
+            Console.WriteLine($"Raw SQL migration check error: {innerEx.Message}");
+        }
+    }
+}
 
 app.UseAuthentication(); // Enable Auth
 app.UseAuthorization();
