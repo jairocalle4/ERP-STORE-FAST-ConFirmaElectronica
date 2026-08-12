@@ -20,18 +20,43 @@ public class CashRegisterController : ControllerBase
     }
 
     [HttpGet("status")]
-    public async Task<ActionResult<CashRegisterSession>> GetCurrentStatus()
+    public async Task<IActionResult> GetCurrentStatus()
     {
         var userId = GetCurrentUserId();
-        // Check for any open session for the user (or system-wide if single terminal, but usually per user)
+        // Check for any open session for the user
         var session = await _context.CashRegisterSessions
             .Where(s => s.UserId == userId && s.Status == "Open")
             .OrderByDescending(s => s.OpenTime)
             .FirstOrDefaultAsync();
 
-        if (session == null) return NoContent();
+        if (session != null)
+        {
+            return Ok(session);
+        }
 
-        return session;
+        // Si no hay caja abierta, consultar el último cierre para sugerir automáticamente el fondo inicial
+        var lastClosed = await _context.CashRegisterSessions
+            .Where(s => s.UserId == userId && s.Status == "Closed")
+            .OrderByDescending(s => s.CloseTime)
+            .FirstOrDefaultAsync();
+
+        if (lastClosed != null)
+        {
+            var suggestedAmount = lastClosed.CloseAmount - lastClosed.WithdrawalAmount;
+            if (suggestedAmount < 0) suggestedAmount = 0;
+
+            return Ok(new
+            {
+                Status = "Closed",
+                LastClosedSessionId = lastClosed.Id,
+                SuggestedNextOpenAmount = suggestedAmount,
+                LastCloseAmount = lastClosed.CloseAmount,
+                LastWithdrawalAmount = lastClosed.WithdrawalAmount,
+                LastCloseTime = lastClosed.CloseTime
+            });
+        }
+
+        return NoContent();
     }
 
     [HttpPost("open")]
@@ -118,7 +143,8 @@ public class CashRegisterController : ControllerBase
         var summary = (await GetSummary()).Value;
         
         session.CloseAmount = dto.CloseAmount;
-        session.CalculatedAmount = summary.CalculatedBalance;
+        session.WithdrawalAmount = dto.WithdrawalAmount ?? 0m;
+        session.CalculatedAmount = summary?.CalculatedBalance ?? session.OpenAmount;
         session.CloseTime = DateTime.UtcNow;
         session.Status = "Closed";
         session.Notes = dto.Notes;
@@ -163,6 +189,8 @@ public class CashRegisterController : ControllerBase
                 s.Status,
                 s.OpenAmount,
                 s.CloseAmount,
+                s.WithdrawalAmount,
+                RemainingAmount = s.CloseAmount - s.WithdrawalAmount,
                 s.CalculatedAmount,
                 s.Discrepancy,
                 s.Notes,
@@ -235,6 +263,8 @@ public class CashRegisterController : ControllerBase
                 s.CloseTime,
                 s.OpenAmount,
                 s.CloseAmount,
+                s.WithdrawalAmount,
+                RemainingAmount = s.CloseAmount - s.WithdrawalAmount,
                 s.CalculatedAmount,
                 s.Discrepancy,
                 s.Notes,
@@ -280,7 +310,7 @@ public class CashRegisterController : ControllerBase
 }
 
 public record OpenSessionDto(decimal Amount);
-public record CloseSessionDto(decimal CloseAmount, string? Notes);
+public record CloseSessionDto(decimal CloseAmount, decimal? WithdrawalAmount, string? Notes);
 public record CashTransactionDto(string Type, decimal Amount, string Description);
 public record CashRegisterSummaryDto
 {

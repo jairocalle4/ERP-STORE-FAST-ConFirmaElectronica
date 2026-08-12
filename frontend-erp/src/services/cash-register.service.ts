@@ -7,6 +7,12 @@ export interface CashRegisterSession {
     closeTime?: string;
     openAmount: number;
     closeAmount: number;
+    withdrawalAmount?: number;
+    remainingAmount?: number;
+    suggestedNextOpenAmount?: number;
+    lastCloseAmount?: number;
+    lastWithdrawalAmount?: number;
+    lastCloseTime?: string;
     calculatedAmount: number;
     discrepancy: number;
     status: string; // 'Open', 'Closed'
@@ -51,8 +57,8 @@ export const cashRegisterService = {
         return response.data;
     },
 
-    closeSession: async (closeAmount: number, notes?: string) => {
-        const response = await api.post<CashRegisterSession>('/cash-register/close', { closeAmount, notes });
+    closeSession: async (closeAmount: number, withdrawalAmount?: number, notes?: string) => {
+        const response = await api.post<CashRegisterSession>('/cash-register/close', { closeAmount, withdrawalAmount, notes });
         return response.data;
     },
 

@@ -13,6 +13,7 @@ const CashRegisterPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [openAmount, setOpenAmount] = useState<string>('');
     const [closeAmount, setCloseAmount] = useState<string>('');
+    const [withdrawalAmount, setWithdrawalAmount] = useState<string>('');
     const [closeNotes, setCloseNotes] = useState('');
     const [showCloseModal, setShowCloseModal] = useState(false);
 
@@ -95,11 +96,23 @@ const CashRegisterPage: React.FC = () => {
         }
     }, [status]);
 
+    useEffect(() => {
+        if (showCloseModal && closeAmount && summary) {
+            const defaultRetiro = Math.max(0, Number(closeAmount) - summary.openAmount);
+            if (!withdrawalAmount) {
+                setWithdrawalAmount(defaultRetiro.toFixed(2));
+            }
+        }
+    }, [closeAmount, showCloseModal]);
+
     const fetchStatus = async () => {
         setLoading(true);
         try {
             const data = await cashRegisterService.getStatus();
             setStatus(data || null);
+            if (data && data.status === 'Closed' && data.suggestedNextOpenAmount !== undefined) {
+                setOpenAmount(data.suggestedNextOpenAmount.toFixed(2));
+            }
         } catch (error) {
             console.error(error);
         } finally {
@@ -150,12 +163,13 @@ const CashRegisterPage: React.FC = () => {
                 userNotes: closeNotes,
                 denominations: denominationInputs
             });
-            await cashRegisterService.closeSession(Number(closeAmount), notesPayload);
+            await cashRegisterService.closeSession(Number(closeAmount), Number(withdrawalAmount || 0), notesPayload);
             addNotification('Caja cerrada correctamente', 'success');
             setShowCloseModal(false);
             fetchStatus();
             fetchHistory();
             setCloseAmount('');
+            setWithdrawalAmount('');
             setCloseNotes('');
             setDenominationInputs({});
         } catch (error: any) {
@@ -242,6 +256,23 @@ const CashRegisterPage: React.FC = () => {
                                 <p className="text-slate-500 font-medium mb-10 max-w-sm mx-auto">
                                     Para comenzar a procesar ventas en efectivo y registrar movimientos, primero debes abrir una nueva sesión de caja.
                                 </p>
+
+                                {status?.suggestedNextOpenAmount !== undefined && (
+                                    <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200/80 rounded-2xl flex items-center justify-between text-xs text-emerald-800 font-bold animate-fade-in shadow-sm">
+                                        <div className="flex items-center gap-3 text-left">
+                                            <div className="w-8 h-8 bg-emerald-600 text-white rounded-xl flex items-center justify-center shrink-0 shadow-md shadow-emerald-200">
+                                                <Wallet size={16} />
+                                            </div>
+                                            <div>
+                                                <span className="block font-black text-slate-800 text-xs">Fondo sugerido del cierre anterior</span>
+                                                <span className="text-[11px] text-emerald-700 font-medium">Pre-llenado automáticamente con el saldo en caja</span>
+                                            </div>
+                                        </div>
+                                        <span className="bg-emerald-600 text-white px-3 py-1.5 rounded-xl text-xs font-black shadow-sm shrink-0">
+                                            ${status.suggestedNextOpenAmount.toFixed(2)}
+                                        </span>
+                                    </div>
+                                )}
 
                                 <form onSubmit={handleOpenSession} className="space-y-6">
                                     <div className="text-left group">
@@ -509,10 +540,9 @@ const CashRegisterPage: React.FC = () => {
                                     setDenominationInputs(inputs);
                                 }}
                             />
-
                             <div className="space-y-3">
                                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest pl-1">
-                                    Dinero Físico Total
+                                    Dinero Físico Total Contado
                                 </label>
                                 <div className="relative">
                                     <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-800 font-bold text-xl">$</div>
@@ -528,6 +558,63 @@ const CashRegisterPage: React.FC = () => {
                                 <p className="text-[10px] text-slate-400 font-bold pl-1">
                                     * Calculado automáticamente según las denominaciones ingresadas.
                                 </p>
+                            </div>
+
+                            {/* Field for Withdrawal Amount / Retiro de Caja */}
+                            <div className="space-y-3 pt-2">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest pl-1">
+                                        Monto a Retirar de Caja (Ganancias / Depósito)
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const profit = Math.max(0, (summary?.cashSales || 0) + (summary?.manualIncome || 0) - (summary?.expenses || 0) - (summary?.manualExpense || 0));
+                                            setWithdrawalAmount(profit.toFixed(2));
+                                        }}
+                                        className="text-[10px] font-black text-rose-600 bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg transition-all"
+                                    >
+                                        Sugerir retiro de ganancia (${Math.max(0, (summary?.cashSales || 0) + (summary?.manualIncome || 0) - (summary?.expenses || 0) - (summary?.manualExpense || 0)).toFixed(2)})
+                                    </button>
+                                </div>
+                                <div className="relative">
+                                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-rose-500 font-black text-xl">-$</div>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        className="w-full pl-12 pr-6 py-4 bg-slate-50 border-2 border-transparent focus:border-rose-300 focus:bg-white rounded-2xl outline-none transition-all text-2xl font-black text-slate-800"
+                                        placeholder="0.00"
+                                        value={withdrawalAmount}
+                                        onChange={(e) => setWithdrawalAmount(e.target.value)}
+                                    />
+                                </div>
+                                <p className="text-[10px] text-slate-400 font-medium pl-1">
+                                    * Dinero que retirarás físicamente del cajón (para banco, guardar ganancia o personal).
+                                </p>
+                            </div>
+
+                            {/* Card: Fondo de caja que quedará para mañana */}
+                            <div className="bg-gradient-to-br from-slate-900 to-indigo-950 p-6 rounded-[2rem] text-white space-y-3 shadow-xl border border-slate-800">
+                                <div className="flex justify-between items-center pb-2.5 border-b border-white/10 text-xs">
+                                    <span className="text-white/60 font-bold uppercase tracking-wider">Dinero Físico Total Contado</span>
+                                    <span className="font-black text-white text-base">${Number(closeAmount || 0).toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between items-center pb-2.5 border-b border-white/10 text-xs">
+                                    <span className="text-rose-400 font-bold uppercase tracking-wider">(-) Retiro de Caja (Depósito / Retiro)</span>
+                                    <span className="font-black text-rose-400 text-base">-${Number(withdrawalAmount || 0).toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between items-center pt-1">
+                                    <div>
+                                        <span className="block text-[10px] font-black text-emerald-400 uppercase tracking-widest italic">
+                                            (=) Fondo Base que Quedará en Caja
+                                        </span>
+                                        <p className="text-[10px] text-white/50">Monto con el que se auto-iniciará la próxima sesión</p>
+                                    </div>
+                                    <span className="text-3xl font-black text-emerald-400">
+                                        ${Math.max(0, Number(closeAmount || 0) - Number(withdrawalAmount || 0)).toFixed(2)}
+                                    </span>
+                                </div>
                             </div>
 
                             {closeAmount && summary && (
@@ -698,7 +785,7 @@ const CashRegisterPage: React.FC = () => {
                                     </div>
 
                                     {/* Valores Financieros */}
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                         <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
                                             <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Base Inicial</span>
                                             <span className="text-lg font-black text-slate-700">${sessionDetails.session.openAmount.toFixed(2)}</span>
@@ -713,13 +800,24 @@ const CashRegisterPage: React.FC = () => {
                                             <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Efectivo Esperado</span>
                                             <span className="text-lg font-black text-indigo-600">${sessionDetails.session.calculatedAmount.toFixed(2)}</span>
                                         </div>
-                                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                                            <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Efectivo Físico</span>
-                                            <span className="text-lg font-black text-slate-700">
-                                                {sessionDetails.session.status === 'Closed' ? `$${sessionDetails.session.closeAmount.toFixed(2)}` : '---'}
-                                            </span>
-                                        </div>
                                     </div>
+
+                                    {sessionDetails.session.status === 'Closed' && (
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                                            <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                                                <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Dinero Físico Contado</span>
+                                                <span className="text-lg font-black text-slate-800">${sessionDetails.session.closeAmount.toFixed(2)}</span>
+                                            </div>
+                                            <div className="p-4 bg-rose-50/70 border border-rose-100 rounded-2xl">
+                                                <span className="block text-[9px] font-black text-rose-500 uppercase tracking-wider mb-1">Retiro de Caja (Ganancias/Depósito)</span>
+                                                <span className="text-lg font-black text-rose-600">-${(sessionDetails.session.withdrawalAmount || 0).toFixed(2)}</span>
+                                            </div>
+                                            <div className="p-4 bg-emerald-50 border border-emerald-200/70 rounded-2xl shadow-sm">
+                                                <span className="block text-[9px] font-black text-emerald-700 uppercase tracking-wider mb-1">Fondo Dejado para Próxima Caja</span>
+                                                <span className="text-lg font-black text-emerald-700">${((sessionDetails.session.closeAmount || 0) - (sessionDetails.session.withdrawalAmount || 0)).toFixed(2)}</span>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Collapse / Acordeón para Desglose de Monedas/Billetes */}
                                     {(() => {
