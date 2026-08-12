@@ -1,21 +1,23 @@
 const { Client } = require('pg');
 
-async function run() {
+async function main() {
   const client = new Client({
-    connectionString: "postgres://neondb_owner:npg_e2cg4MKubLUS@ep-blue-firefly-ait5ft4m.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require"
+    connectionString: process.env.DATABASE_URL || "postgres://neondb_owner:YOUR_DB_PASSWORD@your-neon-host.neon.tech/neondb?sslmode=require"
   });
 
   try {
     await client.connect();
-    await client.query("SET search_path TO public;");
-    
-    console.log("Querying last 10 sales...");
-    const res = await client.query('SELECT "Id", "NoteNumber", "Date", "Total", "IsElectronic", "ElectronicStatus", "AccessKey", "SriErrorMessage" FROM "Sales" ORDER BY "Id" DESC LIMIT 10;');
-    console.table(res.rows);
+    console.log("Conectado a PostgreSQL...");
 
-    console.log("\nQuerying company settings sequence...");
-    const resCompany = await client.query('SELECT "Id", "CurrentSequence", "SriEstablishment", "SriPointOfIssue" FROM "CompanySettings" LIMIT 1;');
-    console.table(resCompany.rows);
+    const res = await client.query(`
+      SELECT s."Id", s."TotalAmount", s."CreatedAt", s."SriStatus", s."SriAccessKey"
+      FROM "Sales" s
+      ORDER BY s."CreatedAt" DESC
+      LIMIT 5;
+    `);
+
+    console.log("Últimas 5 ventas:");
+    console.table(res.rows);
   } catch (err) {
     console.error("Error:", err);
   } finally {
@@ -23,4 +25,4 @@ async function run() {
   }
 }
 
-run();
+main();

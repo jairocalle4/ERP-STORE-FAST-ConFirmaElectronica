@@ -1,25 +1,19 @@
 const { Client } = require('pg');
 
-async function run() {
+async function main() {
   const client = new Client({
-    connectionString: "postgres://neondb_owner:npg_e2cg4MKubLUS@ep-blue-firefly-ait5ft4m.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require"
+    connectionString: process.env.DATABASE_URL || "postgres://neondb_owner:YOUR_DB_PASSWORD@your-neon-host.neon.tech/neondb?sslmode=require"
   });
 
-  await client.connect();
-
-  const res = await client.query(`
-    UPDATE "Sales"
-    SET "NoteNumber" = NULL, 
-        "SriErrorMessage" = 'Reintento manual habilitado', 
-        "ElectronicStatus" = 'ERROR', 
-        "IsElectronic" = true, 
-        "AccessKey" = NULL, 
-        "AuthorizationNumber" = NULL
-    WHERE "Id" = 61
-  `);
-
-  console.log(`Updated ${res.rowCount} rows.`);
-  await client.end();
+  try {
+    await client.connect();
+    await client.query('UPDATE "TenantSettings" SET "CurrentSequence" = "CurrentSequence" + 1;');
+    console.log("Secuencia incrementada exitosamente.");
+  } catch (err) {
+    console.error("Error:", err);
+  } finally {
+    await client.end();
+  }
 }
 
-run().catch(console.error);
+main();

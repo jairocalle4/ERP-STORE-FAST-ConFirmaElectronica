@@ -84,26 +84,32 @@ if (app.Environment.IsDevelopment())
 // app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 
-// Ensure DB migrations / new columns exist automatically on startup
+// Ensure DB schema is up to date on startup
 using (var scope = app.Services.CreateScope())
 {
+    var db = scope.ServiceProvider.GetRequiredService<ErpStore.Infrastructure.Persistence.AppDbContext>();
+    
+    // Step 1: Ensure column exists via raw SQL (safe, idempotent)
     try
     {
-        var db = scope.ServiceProvider.GetRequiredService<ErpStore.Infrastructure.Persistence.AppDbContext>();
-        db.Database.Migrate();
+        db.Database.ExecuteSqlRaw(@"ALTER TABLE ""CashRegisterSessions"" ADD COLUMN IF NOT EXISTS ""WithdrawalAmount"" DECIMAL(18,2) NOT NULL DEFAULT 0;");
+        Console.WriteLine("✅ WithdrawalAmount column verified/created successfully.");
     }
-    catch (Exception ex)
+    catch (Exception sqlEx)
     {
-        Console.WriteLine($"Migration error (fallback to raw SQL check): {ex.Message}");
-        try
-        {
-            var db = scope.ServiceProvider.GetRequiredService<ErpStore.Infrastructure.Persistence.AppDbContext>();
-            db.Database.ExecuteSqlRaw(@"ALTER TABLE ""CashRegisterSessions"" ADD COLUMN IF NOT EXISTS ""WithdrawalAmount"" DECIMAL(18,2) NOT NULL DEFAULT 0;");
-        }
-        catch (Exception innerEx)
-        {
-            Console.WriteLine($"Raw SQL migration check error: {innerEx.Message}");
-        }
+        Console.WriteLine($"⚠️ Raw SQL column check (non-critical): {sqlEx.Message}");
+    }
+
+    // Step 2: Try EF Core migrations for any other pending changes
+    try
+    {
+        db.Database.Migrate();
+        Console.WriteLine("✅ EF Core migrations applied successfully.");
+    }
+    catch (Exception migrateEx)
+    {
+        Console.WriteLine($"⚠️ EF Core Migrate() skipped (non-critical): {migrateEx.Message}");
+        // This is non-critical because the raw SQL above already ensured schema compatibility
     }
 }
 

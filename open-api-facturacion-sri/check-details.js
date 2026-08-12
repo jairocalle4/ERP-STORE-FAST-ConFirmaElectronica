@@ -1,11 +1,9 @@
-const { Pool } = require('pg');
-const pool = new Pool({
-  connectionString: 'postgresql://neondb_owner:npg_e2cg4MKubLUS@ep-blue-firefly-ait5ft4m-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require'
+const { Client } = require('pg');
+const client = new Client({
+  connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:YOUR_DB_PASSWORD@your-neon-host.neon.tech/neondb?sslmode=require'
 });
-pool.query('SELECT * FROM "SaleDetails" WHERE "SaleId" = 39').then(r => {
-  console.log(r.rows);
-  process.exit(0);
-}).catch(e => {
-  console.error(e);
-  process.exit(1);
-});
+client.connect().then(async () => {
+  const res = await client.query('SELECT * FROM "TenantSettings" LIMIT 1;');
+  console.log(res.rows);
+  await client.end();
+}).catch(console.error);
