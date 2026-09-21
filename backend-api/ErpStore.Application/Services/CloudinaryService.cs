@@ -8,7 +8,7 @@ public interface ICloudinaryService
 {
     Task<string?> UploadImageAsync(Stream fileStream, string fileName, string? cloudName = null, string? apiKey = null, string? apiSecret = null);
     Task<string?> UploadVideoAsync(Stream fileStream, string fileName, string? cloudName = null, string? apiKey = null, string? apiSecret = null);
-    Task<bool> TestConnectionAsync(string cloudName, string apiKey, string apiSecret);
+    Task<bool> TestConnectionAsync(string? cloudName = null, string? apiKey = null, string? apiSecret = null);
 }
 
 public class CloudinaryService : ICloudinaryService
@@ -68,14 +68,11 @@ public class CloudinaryService : ICloudinaryService
         return uploadResult?.SecureUrl?.ToString();
     }
 
-    public async Task<bool> TestConnectionAsync(string cloudName, string apiKey, string apiSecret)
+    public async Task<bool> TestConnectionAsync(string? cloudName = null, string? apiKey = null, string? apiSecret = null)
     {
         try
         {
-            var account = new Account(cloudName, apiKey, apiSecret);
-            var cloudinary = new Cloudinary(account);
-            cloudinary.Api.Secure = true;
-            
+            var cloudinary = GetCloudinaryClient(cloudName, apiKey, apiSecret);
             // Usamos PingAsync para validar las credenciales
             var result = await cloudinary.PingAsync();
             return result.StatusCode == System.Net.HttpStatusCode.OK;

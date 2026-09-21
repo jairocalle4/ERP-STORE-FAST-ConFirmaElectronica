@@ -28,7 +28,7 @@ public class CompanySettingsController : ControllerBase
 
     [AllowAnonymous]
     [HttpGet]
-    public async Task<ActionResult<CompanySetting>> GetSettings()
+    public async Task<ActionResult<object>> GetSettings()
     {
         var settings = await _context.CompanySettings.FirstOrDefaultAsync();
         
@@ -74,7 +74,50 @@ public class CompanySettingsController : ControllerBase
             }
         }
 
-        return settings;
+        // SEGURIDAD: Proteger credenciales privadas del frontend (nunca exponer API Secret ni API Key)
+        bool hasCloudinary = !string.IsNullOrWhiteSpace(settings.CloudinaryApiKey) && !string.IsNullOrWhiteSpace(settings.CloudinaryApiSecret);
+        bool hasBrevo = !string.IsNullOrWhiteSpace(settings.BrevoApiKey);
+        bool hasSignature = settings.ElectronicSignatureFile != null && settings.ElectronicSignatureFile.Length > 0;
+
+        return Ok(new
+        {
+            id = settings.Id,
+            name = settings.Name,
+            ruc = settings.Ruc,
+            address = settings.Address,
+            phone = settings.Phone,
+            email = settings.Email,
+            legalMessage = settings.LegalMessage,
+            sriAuth = settings.SriAuth,
+            establishment = settings.Establishment,
+            pointOfIssue = settings.PointOfIssue,
+            currentSequence = settings.CurrentSequence,
+            expirationDate = settings.ExpirationDate,
+            socialReason = settings.SocialReason,
+            coverImageUrl = settings.CoverImageUrl,
+            logoUrl = settings.LogoUrl,
+            sriEnvironment = settings.SriEnvironment,
+            sriEstablishment = settings.SriEstablishment,
+            sriPointOfIssue = settings.SriPointOfIssue,
+            tributaryRegime = settings.TributaryRegime,
+            electronicBillingEnabled = settings.ElectronicBillingEnabled,
+            softwareProviderRuc = settings.SoftwareProviderRuc,
+            ivaRate = settings.IvaRate,
+
+            // Cloudinary: Solo el CloudName público y el indicador seguro de que está configurado
+            cloudinaryCloudName = settings.CloudinaryCloudName,
+            hasCloudinaryConfigured = hasCloudinary,
+
+            // Brevo
+            hasBrevoConfigured = hasBrevo,
+            brevoApiKey = settings.BrevoApiKey,
+
+            // Firma
+            hasSignature = hasSignature,
+
+            createdAt = settings.CreatedAt,
+            updatedAt = settings.UpdatedAt
+        });
     }
 
     [HttpPut]
@@ -117,10 +160,19 @@ public class CompanySettingsController : ControllerBase
         settings.ElectronicSignaturePassword = dto.ElectronicSignaturePassword;
         settings.ElectronicBillingEnabled = dto.ElectronicBillingEnabled;
 
-        // Cloudinary
-        settings.CloudinaryCloudName = dto.CloudinaryCloudName;
-        settings.CloudinaryApiKey = dto.CloudinaryApiKey;
-        settings.CloudinaryApiSecret = dto.CloudinaryApiSecret;
+        // Cloudinary: Solo actualizar si se envían valores nuevos reales (no máscaras ni strings vacíos)
+        if (!string.IsNullOrWhiteSpace(dto.CloudinaryCloudName))
+            settings.CloudinaryCloudName = dto.CloudinaryCloudName.Trim();
+
+        if (!string.IsNullOrWhiteSpace(dto.CloudinaryApiKey) && !dto.CloudinaryApiKey.StartsWith("••"))
+            settings.CloudinaryApiKey = dto.CloudinaryApiKey.Trim();
+        else if (dto.CloudinaryApiKey == "__CLEAR__")
+            settings.CloudinaryApiKey = null;
+
+        if (!string.IsNullOrWhiteSpace(dto.CloudinaryApiSecret) && !dto.CloudinaryApiSecret.StartsWith("••"))
+            settings.CloudinaryApiSecret = dto.CloudinaryApiSecret.Trim();
+        else if (dto.CloudinaryApiSecret == "__CLEAR__")
+            settings.CloudinaryApiSecret = null;
 
         // Proveedor de Software SRI
         settings.SoftwareProviderRuc = dto.SoftwareProviderRuc;
@@ -136,6 +188,12 @@ public class CompanySettingsController : ControllerBase
             Console.WriteLine($"Error syncing with NestJS: {ex.Message}");
         }
 
-        return Ok(settings);
+        return Ok(new {
+            settings.Id,
+            settings.Name,
+            settings.CloudinaryCloudName,
+            hasCloudinaryConfigured = !string.IsNullOrWhiteSpace(settings.CloudinaryApiKey) && !string.IsNullOrWhiteSpace(settings.CloudinaryApiSecret),
+            settings.UpdatedAt
+        });
     }
 }

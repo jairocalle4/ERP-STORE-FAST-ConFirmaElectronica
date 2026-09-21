@@ -62,14 +62,22 @@ public class MediaController : ControllerBase
     }
 
     [HttpPost("test-cloudinary")]
-    public async Task<IActionResult> TestCloudinary([FromBody] TestCloudinaryDto dto)
+    public async Task<IActionResult> TestCloudinary([FromBody] TestCloudinaryDto? dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.CloudName) || string.IsNullOrWhiteSpace(dto.ApiKey) || string.IsNullOrWhiteSpace(dto.ApiSecret))
+        string? cloudName = dto?.CloudName;
+        string? apiKey = dto?.ApiKey;
+        string? apiSecret = dto?.ApiSecret;
+
+        // Si no se pasaron credenciales completas o son máscaras, usar las guardadas en la base de datos o en configuración
+        if (string.IsNullOrWhiteSpace(apiKey) || apiKey.StartsWith("••") || string.IsNullOrWhiteSpace(apiSecret) || apiSecret.StartsWith("••"))
         {
-            return BadRequest(new { message = "Se requieren todas las credenciales (CloudName, ApiKey, ApiSecret)." });
+            var company = await _context.CompanySettings.FirstOrDefaultAsync();
+            cloudName = !string.IsNullOrWhiteSpace(cloudName) ? cloudName : company?.CloudinaryCloudName;
+            apiKey = !string.IsNullOrWhiteSpace(company?.CloudinaryApiKey) ? company.CloudinaryApiKey : null;
+            apiSecret = !string.IsNullOrWhiteSpace(company?.CloudinaryApiSecret) ? company.CloudinaryApiSecret : null;
         }
 
-        var isSuccess = await _cloudinaryService.TestConnectionAsync(dto.CloudName, dto.ApiKey, dto.ApiSecret);
+        var isSuccess = await _cloudinaryService.TestConnectionAsync(cloudName, apiKey, apiSecret);
         
         if (isSuccess)
         {
@@ -84,7 +92,7 @@ public class MediaController : ControllerBase
 
 public class TestCloudinaryDto
 {
-    public string CloudName { get; set; } = string.Empty;
-    public string ApiKey { get; set; } = string.Empty;
-    public string ApiSecret { get; set; } = string.Empty;
+    public string? CloudName { get; set; }
+    public string? ApiKey { get; set; }
+    public string? ApiSecret { get; set; }
 }

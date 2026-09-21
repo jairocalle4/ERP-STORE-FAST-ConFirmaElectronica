@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Building2, Save, MapPin, Phone, Mail, Hash, ShieldCheck, Eye, EyeOff, FileText, Upload, CheckCircle, AlertCircle, Zap, Image as ImageIcon, Loader2, Cloud, RotateCcw } from 'lucide-react';
+import { Building2, Save, MapPin, Phone, Mail, Hash, ShieldCheck, Eye, EyeOff, FileText, Upload, CheckCircle, AlertCircle, Zap, Image as ImageIcon, Loader2, Cloud } from 'lucide-react';
 import { GlassCard } from '../components/common/GlassCard';
 import { companyService } from '../services/company.service';
 import type { CompanySetting } from '../services/company.service';
@@ -142,20 +142,14 @@ export default function SettingsPage() {
         }
     };
 
-    const SYSTEM_CLOUDINARY = {
-        cloudName: 'ddw9fdcnt',
-        apiKey: '123343449494239',
-        apiSecret: 'Ywviek0h8q_ecKnEXH06UjW2rtA'
-    };
-
     const fetchSettings = async () => {
         try {
             const data = await companyService.getSettings();
             setSettings({
                 ...data,
-                cloudinaryCloudName: data.cloudinaryCloudName || SYSTEM_CLOUDINARY.cloudName,
-                cloudinaryApiKey: data.cloudinaryApiKey || SYSTEM_CLOUDINARY.apiKey,
-                cloudinaryApiSecret: data.cloudinaryApiSecret || SYSTEM_CLOUDINARY.apiSecret
+                cloudinaryCloudName: data.cloudinaryCloudName || '',
+                cloudinaryApiKey: '',
+                cloudinaryApiSecret: ''
             });
         } catch (err) {
             console.error('Error fetching settings', err);
@@ -484,7 +478,7 @@ export default function SettingsPage() {
                                     Configuración de Cloudinary (Imágenes y Videos)
                                 </h3>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                    Credenciales activas del sistema para el almacenamiento en la nube de fotos y videos.
+                                    Almacenamiento en la nube para fotos y videos de prendas. Las claves maestras se protegen en el servidor.
                                 </p>
                             </div>
                             <div className="flex items-center gap-2 flex-wrap">
@@ -492,36 +486,23 @@ export default function SettingsPage() {
                                     type="button"
                                     onClick={() => setSettings(s => s ? { 
                                         ...s, 
-                                        cloudinaryCloudName: SYSTEM_CLOUDINARY.cloudName,
-                                        cloudinaryApiKey: SYSTEM_CLOUDINARY.apiKey,
-                                        cloudinaryApiSecret: SYSTEM_CLOUDINARY.apiSecret
-                                    } : null)}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-xl border border-sky-200 transition-all cursor-pointer active:scale-95"
-                                    title="Restaurar credenciales por defecto del sistema"
-                                >
-                                    <RotateCcw size={13} />
-                                    Valores del Sistema
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setSettings(s => s ? { 
-                                        ...s, 
-                                        cloudinaryCloudName: '',
                                         cloudinaryApiKey: '',
                                         cloudinaryApiSecret: ''
                                     } : null)}
                                     className="px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-rose-600 bg-slate-100 hover:bg-rose-50 rounded-xl border border-slate-200 transition-all cursor-pointer active:scale-95"
-                                    title="Limpiar campos para ingresar nuevas credenciales"
+                                    title="Limpiar campos de edición"
                                 >
                                     Limpiar
                                 </button>
                                 <div className={`px-3 py-1.5 rounded-full border flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${
-                                    settings?.cloudinaryCloudName && settings?.cloudinaryApiKey
+                                    settings?.hasCloudinaryConfigured
+                                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                        : settings?.cloudinaryCloudName
                                         ? 'bg-sky-50 border-sky-200 text-sky-700'
                                         : 'bg-slate-100 border-slate-200 text-slate-500'
                                 }`}>
-                                    <div className={`w-2 h-2 rounded-full ${settings?.cloudinaryCloudName ? 'bg-sky-500 animate-pulse' : 'bg-slate-400'}`}></div>
-                                    {settings?.cloudinaryCloudName ? 'Configurado' : 'Sin Configurar'}
+                                    <div className={`w-2 h-2 rounded-full ${settings?.hasCloudinaryConfigured ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></div>
+                                    {settings?.hasCloudinaryConfigured ? 'Configurado en Servidor 🔒' : 'Sin Configurar'}
                                 </div>
                             </div>
                         </div>
@@ -541,7 +522,7 @@ export default function SettingsPage() {
                                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">API Key</label>
                                 <input
                                     type="text"
-                                    placeholder="Ej: 123456789012345"
+                                    placeholder={settings?.hasCloudinaryConfigured ? "•••••••••••••••••••• (Guardado en servidor)" : "Ej: 123456789012345"}
                                     value={settings?.cloudinaryApiKey || ''}
                                     onChange={e => setSettings(s => s ? { ...s, cloudinaryApiKey: e.target.value } : null)}
                                     className="w-full px-4 py-3 bg-white/80 border border-indigo-100 rounded-xl focus:ring-2 focus:ring-sky-500/50 outline-none transition-all text-sm font-mono"
@@ -552,7 +533,7 @@ export default function SettingsPage() {
                                 <div className="relative">
                                     <input
                                         type={showCloudinarySecret ? 'text' : 'password'}
-                                        placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                                        placeholder={settings?.hasCloudinaryConfigured ? "•••••••••••••••••••• (Guardado en servidor)" : "Escribe nueva secret key"}
                                         value={settings?.cloudinaryApiSecret || ''}
                                         onChange={e => setSettings(s => s ? { ...s, cloudinaryApiSecret: e.target.value } : null)}
                                         className="w-full pr-10 pl-4 py-3 bg-white/80 border border-indigo-100 rounded-xl focus:ring-2 focus:ring-sky-500/50 outline-none transition-all text-sm font-mono"
@@ -567,6 +548,17 @@ export default function SettingsPage() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Security Notice */}
+                        <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-3.5 flex items-start gap-3 text-xs text-emerald-800">
+                            <ShieldCheck size={18} className="text-emerald-600 shrink-0 mt-0.5" />
+                            <div>
+                                <p className="font-bold">Privacidad y Seguridad Garantizada</p>
+                                <p className="text-[11px] text-emerald-700 mt-0.5 leading-relaxed">
+                                    Por seguridad, las claves maestras de Cloudinary residen protegidas en el backend y jamás se transmiten al navegador. Deja los campos en blanco para mantener la configuración existente, o ingresa nuevos valores si deseas actualizarlos.
+                                </p>
+                            </div>
+                        </div>
                         
                         <div className="pt-2 flex items-center gap-4 flex-wrap border-t border-slate-100">
                             <button
@@ -576,9 +568,9 @@ export default function SettingsPage() {
                                     setTestCloudinaryResult(null);
                                     try {
                                         const res = await api.post('/media/test-cloudinary', {
-                                            cloudName: settings?.cloudinaryCloudName,
-                                            apiKey: settings?.cloudinaryApiKey,
-                                            apiSecret: settings?.cloudinaryApiSecret
+                                            cloudName: settings?.cloudinaryCloudName || undefined,
+                                            apiKey: settings?.cloudinaryApiKey || undefined,
+                                            apiSecret: settings?.cloudinaryApiSecret || undefined
                                         });
                                         setTestCloudinaryResult({ ok: true, msg: res.data.message });
                                     } catch (e: any) {
@@ -591,7 +583,7 @@ export default function SettingsPage() {
                                         setTestingCloudinary(false);
                                     }
                                 }}
-                                disabled={testingCloudinary || !settings?.cloudinaryCloudName || !settings?.cloudinaryApiKey || !settings?.cloudinaryApiSecret}
+                                disabled={testingCloudinary || (!settings?.hasCloudinaryConfigured && (!settings?.cloudinaryCloudName || !settings?.cloudinaryApiKey || !settings?.cloudinaryApiSecret))}
                                 className="flex items-center gap-2 px-5 py-2.5 bg-sky-50 border border-sky-200 text-sky-700 hover:bg-sky-100 rounded-xl font-black text-xs uppercase tracking-widest transition-all disabled:opacity-50 active:scale-95"
                             >
                                 {testingCloudinary ? (

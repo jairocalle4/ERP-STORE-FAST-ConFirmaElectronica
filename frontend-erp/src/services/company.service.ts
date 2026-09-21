@@ -21,6 +21,7 @@ export interface CompanySetting {
     cloudinaryCloudName?: string;
     cloudinaryApiKey?: string;
     cloudinaryApiSecret?: string;
+    hasCloudinaryConfigured?: boolean;
     softwareProviderRuc?: string;
 }
 
