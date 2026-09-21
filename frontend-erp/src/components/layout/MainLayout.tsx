@@ -6,6 +6,11 @@ import { notificationService, type Notification } from '../../services/notificat
 import { useAuthStore } from '../../store/useAuthStore';
 import { Toast } from '../common/Toast';
 import { companyService } from '../../services/company.service';
+import { BillingProcessingModal } from '../modals/BillingProcessingModal';
+import { BillingFloatingWidget } from '../common/BillingFloatingWidget';
+import SaleDetailsModal from '../modals/SaleDetailsModal';
+import { useBillingQueueStore } from '../../store/useBillingQueueStore';
+import { saleService, type Sale } from '../../services/sale.service';
 
 const THEME_CONFIG: Record<Theme, { icon: React.ElementType; label: string; next: Theme }> = {
     light: { icon: Sun, label: 'Claro', next: 'dark' },
@@ -41,6 +46,23 @@ export default function MainLayout() {
     const [unreadCount, setUnreadCount] = useState(0);
     const [companyName, setCompanyName] = useState('ERP-STORE-FAST');
     const location = useLocation();
+
+    // Global billing modal viewer
+    const { viewSaleId, setGlobalViewSaleId } = useBillingQueueStore();
+    const [globalSale, setGlobalSale] = useState<Sale | null>(null);
+
+    useEffect(() => {
+        if (viewSaleId) {
+            saleService.getById(viewSaleId)
+                .then(data => setGlobalSale(data))
+                .catch(err => {
+                    console.error('Error loading sale for modal', err);
+                    setGlobalViewSaleId(null);
+                });
+        } else {
+            setGlobalSale(null);
+        }
+    }, [viewSaleId]);
 
     useEffect(() => {
         const fetchCompanyInfo = async () => {
@@ -437,6 +459,18 @@ export default function MainLayout() {
                 </main>
             </div>
             <Toast />
+            <BillingProcessingModal />
+            <BillingFloatingWidget />
+            {globalSale && (
+                <SaleDetailsModal
+                    isOpen={true}
+                    sale={globalSale}
+                    onClose={() => {
+                        setGlobalSale(null);
+                        setGlobalViewSaleId(null);
+                    }}
+                />
+            )}
         </div>
     );
 }

@@ -54,6 +54,18 @@ export const Toast: React.FC = () => {
                     <div className="flex-1 text-sm font-bold text-slate-800">
                         {n.message}
                     </div>
+                    {n.action && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                n.action!.onClick();
+                                removeNotification(n.id);
+                            }}
+                            className="flex-shrink-0 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-black rounded-xl shadow-md shadow-indigo-500/20 transition-all cursor-pointer whitespace-nowrap pointer-events-auto"
+                        >
+                            {n.action.label}
+                        </button>
+                    )}
                     <button
                         onClick={() => removeNotification(n.id)}
                         className="flex-shrink-0 text-slate-400 hover:text-slate-600 transition-colors pointer-events-auto cursor-pointer p-1 rounded-lg hover:bg-black/5"

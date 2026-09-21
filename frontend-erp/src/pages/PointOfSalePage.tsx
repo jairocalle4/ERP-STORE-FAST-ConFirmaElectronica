@@ -12,8 +12,8 @@ import ClientFormModal from '../components/modals/ClientFormModal';
 import SaleDetailsModal from '../components/modals/SaleDetailsModal';
 import api from '../services/api';
 import ConfirmModal from '../components/modals/ConfirmModal';
-import { electronicBillingService } from '../services/electronic-billing.service';
 import type { ElectronicBillingResult } from '../services/electronic-billing.service';
+import { useBillingQueueStore } from '../store/useBillingQueueStore';
 
 interface CartItem {
     product: Product;
@@ -34,6 +34,7 @@ export default function PointOfSalePage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
     const addNotification = useNotificationStore(s => s.addNotification);
+    const startBilling = useBillingQueueStore(state => state.startBilling);
 
     // Cart & Sale State
     const [cart, setCart] = useState<CartItem[]>([]);
@@ -51,7 +52,6 @@ export default function PointOfSalePage() {
     // === Facturación Electrónica ===
     const [emitirFE, setEmitirFE] = useState(false);
     const [feResult, setFeResult] = useState<ElectronicBillingResult | null>(null);
-    const [emittingFe, setEmittingFe] = useState(false);
 
     // Pagination / Infinite Scroll
     const [visibleLimit, setVisibleLimit] = useState(24);
@@ -179,32 +179,36 @@ export default function PointOfSalePage() {
 
             const newSale = await saleService.create(saleData);
 
-            // === Emitir Factura Electrónica (si el toggle está activo) ===
-            if (emitirFE && newSale?.id) {
-                setEmittingFe(true);
-                try {
-                    const result = await electronicBillingService.emitirFactura(newSale.id);
-                    setFeResult(result);
-                } catch (feErr: any) {
-                    setFeResult({
-                        success: false,
-                        status: 'ERROR',
-                        errorMessage: feErr?.response?.data?.message ?? 'Error al emitir FE'
-                    });
-                } finally {
-                    setEmittingFe(false);
-                }
-            }
-
-            setCompletedSale(newSale);
-            setShowSuccess(true);
+            // Reset POS state immediately so cashier is free to proceed
             setCart([]);
             setSelectedClient(null);
-            // We don't auto-hide anymore so user can print
 
-            // Refresh products to update stock
-            const updatedProducts = await productService.getAll(false, 1, 1000);
-            setProducts(updatedProducts.items);
+            // Refresh products in background to update stock
+            productService.getAll(false, 1, 1000).then(updatedProducts => {
+                setProducts(updatedProducts.items);
+            }).catch(console.error);
+
+            // === Emitir Factura Electrónica (si el toggle está activo) ===
+            if (emitirFE && newSale?.id) {
+                startBilling(newSale.id, newSale.noteNumber || `#${newSale.id}`, {
+                    onSuccess: (result) => {
+                        setFeResult(result);
+                        saleService.getById(newSale.id).then(updated => {
+                            setCompletedSale(updated);
+                        }).catch(() => setCompletedSale(newSale));
+                    },
+                    onError: (err) => {
+                        setFeResult({
+                            success: false,
+                            status: 'ERROR',
+                            errorMessage: err?.errorMessage || 'Error al emitir FE'
+                        });
+                    }
+                });
+            } else {
+                setCompletedSale(newSale);
+                setShowSuccess(true);
+            }
         } catch (err: any) {
             console.error('Checkout error', err);
 
@@ -704,19 +708,16 @@ export default function PointOfSalePage() {
                         <p className="text-slate-500 font-bold mb-4">La transacción ha sido procesada correctamente.</p>
 
                         {/* FE Result */}
-                        {emitirFE && (
-                            <div className={`mb-6 p-4 rounded-2xl border text-sm font-bold flex items-center gap-3 text-left ${emittingFe
-                                    ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
-                                    : feResult?.status === 'AUTORIZADO'
-                                        ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                                        : 'bg-rose-50 border-rose-200 text-rose-700'
-                                }`}>
-                                {emittingFe ? (
-                                    <><div className="w-5 h-5 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin shrink-0" /><span>Emitiendo factura electrónica...</span></>
-                                ) : feResult?.status === 'AUTORIZADO' ? (
+                        {emitirFE && feResult && (
+                            <div className={`mb-6 p-4 rounded-2xl border text-sm font-bold flex items-center gap-3 text-left ${
+                                feResult.status === 'AUTORIZADO'
+                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                                    : 'bg-rose-50 border-rose-200 text-rose-700'
+                            }`}>
+                                {feResult.status === 'AUTORIZADO' ? (
                                     <><Check size={20} className="text-emerald-600 shrink-0" /><div><p>✅ Factura Autorizada por el SRI</p><p className="text-xs font-mono mt-1 text-emerald-600 truncate">{feResult.authorizationNumber}</p>{feResult.emailSent === false ? <p className="text-xs text-rose-500 mt-1">⚠ Error enviando correo: {feResult.emailError}</p> : <p className="text-xs text-emerald-600 mt-1">✉ Correo enviado al cliente</p>}</div></>
                                 ) : (
-                                    <><FileText size={20} className="text-rose-500 shrink-0" /><div><p>⚠ {feResult?.errorMessage ?? 'Sin respuesta del SRI'}</p><p className="text-[10px] font-normal mt-1">Puedes reintentar desde Historial de Ventas.</p></div></>
+                                    <><FileText size={20} className="text-rose-500 shrink-0" /><div><p>⚠ {feResult.errorMessage ?? 'Sin respuesta del SRI'}</p><p className="text-[10px] font-normal mt-1">Puedes reintentar desde Historial de Ventas.</p></div></>
                                 )}
                             </div>
                         )}

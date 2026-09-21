@@ -6,6 +6,7 @@ import { saleService } from '../../services/sale.service';
 import { companyService, type CompanySetting } from '../../services/company.service';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { electronicBillingService } from '../../services/electronic-billing.service';
+import { useBillingQueueStore } from '../../store/useBillingQueueStore';
 
 interface SaleDetailsModalProps {
     isOpen: boolean;
@@ -17,37 +18,25 @@ interface SaleDetailsModalProps {
 
 const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({ isOpen, onClose, sale, autoPrint = false, onVoid }) => {
     const addNotification = useNotificationStore(state => state.addNotification);
+    const { startBilling, activeJob } = useBillingQueueStore();
+    const isJobProcessingThisSale = activeJob?.saleId === sale?.id && activeJob?.status === 'processing';
     const [isVoiding, setIsVoiding] = React.useState(false);
     const [showConfirmVoid, setShowConfirmVoid] = React.useState(false);
     const [company, setCompany] = React.useState<CompanySetting | null>(null);
-    const [isReemitting, setIsReemitting] = React.useState(false);
     const [isResending, setIsResending] = React.useState(false);
 
     const handleReemit = async () => {
         if (!sale) return;
-        setIsReemitting(true);
-        try {
-            const result = await electronicBillingService.emitirFactura(sale.id);
-            if (result.success) {
-                addNotification('¡Factura emitida y autorizada con éxito! 🎉', 'success');
+        startBilling(sale.id, sale.noteNumber || `#${sale.id}`, {
+            onSuccess: (result) => {
                 if (result.emailSent === false) {
                     addNotification(`Factura autorizada, pero hubo un error enviando el correo al cliente: ${result.emailError || 'Desconocido'}`, 'warning');
                 } else {
                     addNotification('El comprobante fue enviado al correo del cliente', 'success');
                 }
-                
-                if (onVoid) onVoid(); // Refresca la tabla de ventas de fondo sin recargar la página
-                setTimeout(() => onClose(), 2000); // Cierra el modal suavemente después de 2 segundos
-            } else {
-                addNotification(`Fallo al emitir la factura: ${result.errorMessage}`, 'error');
+                if (onVoid) onVoid(); // Refresca la tabla de ventas de fondo
             }
-        } catch (error: any) {
-            console.error(error);
-            const serverError = error?.response?.data?.error || error?.response?.data || error?.message || 'Error al emitir';
-            addNotification(`Error al emitir factura: ${serverError}`, 'error');
-        } finally {
-            setIsReemitting(false);
-        }
+        });
     };
 
     const handleResendEmail = async () => {
@@ -520,19 +509,36 @@ const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({ isOpen, onClose, sa
                                     </>
                                 ) : (
                                     <button
+                                        type="button"
                                         onClick={handleReemit}
-                                        disabled={isReemitting}
-                                        className="px-4 py-4 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] transition-all flex items-center gap-2 shadow-lg shadow-amber-200"
-                                        title="Reintentar emisión de factura electrónica"
+                                        disabled={isJobProcessingThisSale}
+                                        className="px-4 py-4 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] transition-all flex items-center gap-2 shadow-lg shadow-amber-200 cursor-pointer"
+                                        title="Reintentar emisión de factura electrónica ante el SRI"
                                     >
-                                        {isReemitting ? (
+                                        {isJobProcessingThisSale ? (
                                             <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
                                         ) : (
                                             <Zap size={16} />
                                         )}
-                                        Reintentar FE
+                                        {isJobProcessingThisSale ? 'Facturando...' : 'Reintentar FE'}
                                     </button>
                                 )
+                            )}
+                            {!(sale as any).isElectronic && (
+                                <button
+                                    type="button"
+                                    onClick={handleReemit}
+                                    disabled={isJobProcessingThisSale}
+                                    className="px-4 py-4 bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-700 hover:to-sky-700 disabled:opacity-50 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] transition-all flex items-center gap-2 shadow-lg shadow-indigo-200 cursor-pointer"
+                                    title="Emitir factura electrónica ante el SRI para esta venta"
+                                >
+                                    {isJobProcessingThisSale ? (
+                                        <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                                    ) : (
+                                        <Zap size={16} />
+                                    )}
+                                    {isJobProcessingThisSale ? 'Facturando...' : 'Facturar SRI'}
+                                </button>
                             )}
                         </div>
                     </div>
