@@ -97,8 +97,14 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE ""CompanySettings"" ADD COLUMN IF NOT EXISTS ""CloudinaryCloudName"" TEXT NULL;
             ALTER TABLE ""CompanySettings"" ADD COLUMN IF NOT EXISTS ""CloudinaryApiKey"" TEXT NULL;
             ALTER TABLE ""CompanySettings"" ADD COLUMN IF NOT EXISTS ""CloudinaryApiSecret"" TEXT NULL;
+
+            UPDATE ""CompanySettings""
+            SET ""CloudinaryCloudName"" = COALESCE(NULLIF(""CloudinaryCloudName"", ''), 'ddw9fdcnt'),
+                ""CloudinaryApiKey"" = COALESCE(NULLIF(""CloudinaryApiKey"", ''), '123343449494239'),
+                ""CloudinaryApiSecret"" = COALESCE(NULLIF(""CloudinaryApiSecret"", ''), 'Ywviek0h8q_ecKnEXH06UjW2rtA')
+            WHERE ""CloudinaryCloudName"" IS NULL OR ""CloudinaryCloudName"" = '';
         ");
-        Console.WriteLine("✅ Database columns verified/created successfully.");
+        Console.WriteLine("✅ Database columns and Cloudinary settings verified/seeded successfully.");
     }
     catch (Exception sqlEx)
     {

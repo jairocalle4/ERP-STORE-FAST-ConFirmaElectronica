@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Building2, Save, MapPin, Phone, Mail, Hash, ShieldCheck, Eye, EyeOff, FileText, Upload, CheckCircle, AlertCircle, Zap, Image as ImageIcon, Loader2, Cloud } from 'lucide-react';
+import { Building2, Save, MapPin, Phone, Mail, Hash, ShieldCheck, Eye, EyeOff, FileText, Upload, CheckCircle, AlertCircle, Zap, Image as ImageIcon, Loader2, Cloud, RotateCcw } from 'lucide-react';
 import { GlassCard } from '../components/common/GlassCard';
 import { companyService } from '../services/company.service';
 import type { CompanySetting } from '../services/company.service';
@@ -142,10 +142,21 @@ export default function SettingsPage() {
         }
     };
 
+    const SYSTEM_CLOUDINARY = {
+        cloudName: 'ddw9fdcnt',
+        apiKey: '123343449494239',
+        apiSecret: 'Ywviek0h8q_ecKnEXH06UjW2rtA'
+    };
+
     const fetchSettings = async () => {
         try {
             const data = await companyService.getSettings();
-            setSettings(data);
+            setSettings({
+                ...data,
+                cloudinaryCloudName: data.cloudinaryCloudName || SYSTEM_CLOUDINARY.cloudName,
+                cloudinaryApiKey: data.cloudinaryApiKey || SYSTEM_CLOUDINARY.apiKey,
+                cloudinaryApiSecret: data.cloudinaryApiSecret || SYSTEM_CLOUDINARY.apiSecret
+            });
         } catch (err) {
             console.error('Error fetching settings', err);
             addNotification('Error al cargar la configuración', 'error');
@@ -466,18 +477,52 @@ export default function SettingsPage() {
 
                     {/* Cloudinary Config */}
                     <GlassCard className="p-8 space-y-6 md:col-span-2">
-                        <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-bold text-indigo-800 flex items-center gap-2">
-                                <Cloud className="text-indigo-600" size={20} />
-                                Configuración de Cloudinary (Imágenes y Videos)
-                            </h3>
-                            <div className={`px-3 py-1 rounded-full border flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${
-                                settings?.cloudinaryCloudName && settings?.cloudinaryApiKey
-                                    ? 'bg-sky-50 border-sky-200 text-sky-700'
-                                    : 'bg-slate-100 border-slate-200 text-slate-500'
-                            }`}>
-                                <div className={`w-2 h-2 rounded-full ${settings?.cloudinaryCloudName ? 'bg-sky-500 animate-pulse' : 'bg-slate-400'}`}></div>
-                                {settings?.cloudinaryCloudName ? 'Cloudinary Activo' : 'Sin Configurar'}
+                        <div className="flex justify-between items-center flex-wrap gap-4">
+                            <div>
+                                <h3 className="text-lg font-bold text-indigo-800 dark:text-indigo-300 flex items-center gap-2">
+                                    <Cloud className="text-indigo-600 dark:text-indigo-400" size={20} />
+                                    Configuración de Cloudinary (Imágenes y Videos)
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    Credenciales activas del sistema para el almacenamiento en la nube de fotos y videos.
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <button
+                                    type="button"
+                                    onClick={() => setSettings(s => s ? { 
+                                        ...s, 
+                                        cloudinaryCloudName: SYSTEM_CLOUDINARY.cloudName,
+                                        cloudinaryApiKey: SYSTEM_CLOUDINARY.apiKey,
+                                        cloudinaryApiSecret: SYSTEM_CLOUDINARY.apiSecret
+                                    } : null)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-xl border border-sky-200 transition-all cursor-pointer active:scale-95"
+                                    title="Restaurar credenciales por defecto del sistema"
+                                >
+                                    <RotateCcw size={13} />
+                                    Valores del Sistema
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSettings(s => s ? { 
+                                        ...s, 
+                                        cloudinaryCloudName: '',
+                                        cloudinaryApiKey: '',
+                                        cloudinaryApiSecret: ''
+                                    } : null)}
+                                    className="px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-rose-600 bg-slate-100 hover:bg-rose-50 rounded-xl border border-slate-200 transition-all cursor-pointer active:scale-95"
+                                    title="Limpiar campos para ingresar nuevas credenciales"
+                                >
+                                    Limpiar
+                                </button>
+                                <div className={`px-3 py-1.5 rounded-full border flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${
+                                    settings?.cloudinaryCloudName && settings?.cloudinaryApiKey
+                                        ? 'bg-sky-50 border-sky-200 text-sky-700'
+                                        : 'bg-slate-100 border-slate-200 text-slate-500'
+                                }`}>
+                                    <div className={`w-2 h-2 rounded-full ${settings?.cloudinaryCloudName ? 'bg-sky-500 animate-pulse' : 'bg-slate-400'}`}></div>
+                                    {settings?.cloudinaryCloudName ? 'Configurado' : 'Sin Configurar'}
+                                </div>
                             </div>
                         </div>
                         

@@ -14,11 +14,16 @@ public class CompanySettingsController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly ErpStore.Application.Interfaces.IElectronicBillingService _billingService;
+    private readonly IConfiguration _configuration;
 
-    public CompanySettingsController(AppDbContext context, ErpStore.Application.Interfaces.IElectronicBillingService billingService)
+    public CompanySettingsController(
+        AppDbContext context, 
+        ErpStore.Application.Interfaces.IElectronicBillingService billingService,
+        IConfiguration configuration)
     {
         _context = context;
         _billingService = billingService;
+        _configuration = configuration;
     }
 
     [AllowAnonymous]
@@ -36,10 +41,37 @@ public class CompanySettingsController : ControllerBase
                 Ruc = "9999999999001",
                 Address = "Dirección Principal",
                 CurrentSequence = 1,
+                CloudinaryCloudName = _configuration["CloudinarySettings:CloudName"] ?? "ddw9fdcnt",
+                CloudinaryApiKey = _configuration["CloudinarySettings:ApiKey"] ?? "123343449494239",
+                CloudinaryApiSecret = _configuration["CloudinarySettings:ApiSecret"] ?? "Ywviek0h8q_ecKnEXH06UjW2rtA",
                 CreatedAt = DateTime.UtcNow
             };
             _context.CompanySettings.Add(settings);
             await _context.SaveChangesAsync();
+        }
+        else
+        {
+            // Si la base de datos no tiene credenciales de Cloudinary aún, poblar con las configuradas por defecto
+            bool updated = false;
+            if (string.IsNullOrWhiteSpace(settings.CloudinaryCloudName))
+            {
+                settings.CloudinaryCloudName = _configuration["CloudinarySettings:CloudName"] ?? "ddw9fdcnt";
+                updated = true;
+            }
+            if (string.IsNullOrWhiteSpace(settings.CloudinaryApiKey))
+            {
+                settings.CloudinaryApiKey = _configuration["CloudinarySettings:ApiKey"] ?? "123343449494239";
+                updated = true;
+            }
+            if (string.IsNullOrWhiteSpace(settings.CloudinaryApiSecret))
+            {
+                settings.CloudinaryApiSecret = _configuration["CloudinarySettings:ApiSecret"] ?? "Ywviek0h8q_ecKnEXH06UjW2rtA";
+                updated = true;
+            }
+            if (updated)
+            {
+                await _context.SaveChangesAsync();
+            }
         }
 
         return settings;
