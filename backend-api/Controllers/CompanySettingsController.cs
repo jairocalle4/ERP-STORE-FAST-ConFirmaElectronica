@@ -85,6 +85,11 @@ public class CompanySettingsController : ControllerBase
         settings.ElectronicSignaturePassword = dto.ElectronicSignaturePassword;
         settings.ElectronicBillingEnabled = dto.ElectronicBillingEnabled;
 
+        // Cloudinary
+        settings.CloudinaryCloudName = dto.CloudinaryCloudName;
+        settings.CloudinaryApiKey = dto.CloudinaryApiKey;
+        settings.CloudinaryApiSecret = dto.CloudinaryApiSecret;
+
         settings.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();

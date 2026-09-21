@@ -28,4 +28,7 @@ public class CompanySettingDto
     public string? ElectronicSignaturePassword { get; set; }
     public bool ElectronicBillingEnabled { get; set; }
     public string? LogoUrl { get; set; }
+    public string? CloudinaryCloudName { get; set; }
+    public string? CloudinaryApiKey { get; set; }
+    public string? CloudinaryApiSecret { get; set; }
 }

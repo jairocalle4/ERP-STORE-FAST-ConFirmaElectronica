@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Building2, Save, MapPin, Phone, Mail, Hash, ShieldCheck, Eye, EyeOff, FileText, Upload, CheckCircle, AlertCircle, Zap, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Building2, Save, MapPin, Phone, Mail, Hash, ShieldCheck, Eye, EyeOff, FileText, Upload, CheckCircle, AlertCircle, Zap, Image as ImageIcon, Loader2, Cloud } from 'lucide-react';
 import { GlassCard } from '../components/common/GlassCard';
 import { companyService } from '../services/company.service';
 import type { CompanySetting } from '../services/company.service';
@@ -12,8 +12,15 @@ export default function SettingsPage() {
     const [settings, setSettings] = useState<CompanySetting | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    
     const [testingEmail, setTestingEmail] = useState(false);
     const [testEmailResult, setTestEmailResult] = useState<{ ok: boolean; msg: string; detail?: string } | null>(null);
+    
+    // Cloudinary Test States
+    const [testingCloudinary, setTestingCloudinary] = useState(false);
+    const [testCloudinaryResult, setTestCloudinaryResult] = useState<{ ok: boolean; msg: string } | null>(null);
+    const [showCloudinarySecret, setShowCloudinarySecret] = useState(false);
+
     const addNotification = useNotificationStore(state => state.addNotification);
     
     // Logo upload
@@ -452,6 +459,110 @@ export default function SettingsPage() {
                                     {testEmailResult.detail && (
                                         <p className="text-[11px] font-normal mt-0.5 opacity-80">{testEmailResult.detail}</p>
                                     )}
+                                </div>
+                            )}
+                        </div>
+                    </GlassCard>
+
+                    {/* Cloudinary Config */}
+                    <GlassCard className="p-8 space-y-6 md:col-span-2">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-indigo-800 flex items-center gap-2">
+                                <Cloud className="text-indigo-600" size={20} />
+                                Configuración de Cloudinary (Imágenes y Videos)
+                            </h3>
+                            <div className={`px-3 py-1 rounded-full border flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${
+                                settings?.cloudinaryCloudName && settings?.cloudinaryApiKey
+                                    ? 'bg-sky-50 border-sky-200 text-sky-700'
+                                    : 'bg-slate-100 border-slate-200 text-slate-500'
+                            }`}>
+                                <div className={`w-2 h-2 rounded-full ${settings?.cloudinaryCloudName ? 'bg-sky-500 animate-pulse' : 'bg-slate-400'}`}></div>
+                                {settings?.cloudinaryCloudName ? 'Cloudinary Activo' : 'Sin Configurar'}
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <div>
+                                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Cloud Name</label>
+                                <input
+                                    type="text"
+                                    placeholder="Ej: ddw9fdcnt"
+                                    value={settings?.cloudinaryCloudName || ''}
+                                    onChange={e => setSettings(s => s ? { ...s, cloudinaryCloudName: e.target.value } : null)}
+                                    className="w-full px-4 py-3 bg-white/80 border border-indigo-100 rounded-xl focus:ring-2 focus:ring-sky-500/50 outline-none transition-all text-sm font-mono"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">API Key</label>
+                                <input
+                                    type="text"
+                                    placeholder="Ej: 123456789012345"
+                                    value={settings?.cloudinaryApiKey || ''}
+                                    onChange={e => setSettings(s => s ? { ...s, cloudinaryApiKey: e.target.value } : null)}
+                                    className="w-full px-4 py-3 bg-white/80 border border-indigo-100 rounded-xl focus:ring-2 focus:ring-sky-500/50 outline-none transition-all text-sm font-mono"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">API Secret</label>
+                                <div className="relative">
+                                    <input
+                                        type={showCloudinarySecret ? 'text' : 'password'}
+                                        placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                                        value={settings?.cloudinaryApiSecret || ''}
+                                        onChange={e => setSettings(s => s ? { ...s, cloudinaryApiSecret: e.target.value } : null)}
+                                        className="w-full pr-10 pl-4 py-3 bg-white/80 border border-indigo-100 rounded-xl focus:ring-2 focus:ring-sky-500/50 outline-none transition-all text-sm font-mono"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCloudinarySecret(!showCloudinarySecret)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-sky-500"
+                                    >
+                                        {showCloudinarySecret ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="pt-2 flex items-center gap-4 flex-wrap border-t border-slate-100">
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    setTestingCloudinary(true);
+                                    setTestCloudinaryResult(null);
+                                    try {
+                                        const res = await api.post('/media/test-cloudinary', {
+                                            cloudName: settings?.cloudinaryCloudName,
+                                            apiKey: settings?.cloudinaryApiKey,
+                                            apiSecret: settings?.cloudinaryApiSecret
+                                        });
+                                        setTestCloudinaryResult({ ok: true, msg: res.data.message });
+                                    } catch (e: any) {
+                                        const errData = e?.response?.data;
+                                        setTestCloudinaryResult({ 
+                                            ok: false, 
+                                            msg: errData?.message || 'Error de conexión con Cloudinary.' 
+                                        });
+                                    } finally {
+                                        setTestingCloudinary(false);
+                                    }
+                                }}
+                                disabled={testingCloudinary || !settings?.cloudinaryCloudName || !settings?.cloudinaryApiKey || !settings?.cloudinaryApiSecret}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-sky-50 border border-sky-200 text-sky-700 hover:bg-sky-100 rounded-xl font-black text-xs uppercase tracking-widest transition-all disabled:opacity-50 active:scale-95"
+                            >
+                                {testingCloudinary ? (
+                                    <div className="w-4 h-4 border-2 border-sky-300 border-t-sky-600 rounded-full animate-spin" />
+                                ) : (
+                                    <Cloud size={15} />
+                                )}
+                                {testingCloudinary ? 'Probando...' : 'Probar Conexión Cloudinary'}
+                            </button>
+
+                            {testCloudinaryResult && (
+                                <div className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-bold border ${testCloudinaryResult.ok
+                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                    : 'bg-rose-50 border-rose-200 text-rose-700'
+                                    }`}>
+                                    {testCloudinaryResult.ok ? '✅ ' : '❌ '}{testCloudinaryResult.msg}
                                 </div>
                             )}
                         </div>

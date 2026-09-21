@@ -6,28 +6,43 @@ namespace ErpStore.Application.Services;
 
 public interface ICloudinaryService
 {
-    Task<string?> UploadImageAsync(Stream fileStream, string fileName);
-    Task<string?> UploadVideoAsync(Stream fileStream, string fileName);
+    Task<string?> UploadImageAsync(Stream fileStream, string fileName, string? cloudName = null, string? apiKey = null, string? apiSecret = null);
+    Task<string?> UploadVideoAsync(Stream fileStream, string fileName, string? cloudName = null, string? apiKey = null, string? apiSecret = null);
+    Task<bool> TestConnectionAsync(string cloudName, string apiKey, string apiSecret);
 }
 
 public class CloudinaryService : ICloudinaryService
 {
-    private readonly Cloudinary _cloudinary;
+    private readonly IConfiguration _configuration;
 
     public CloudinaryService(IConfiguration configuration)
     {
-        var section = configuration.GetSection("CloudinarySettings");
-        var account = new Account(
-            section["CloudName"],
-            section["ApiKey"],
-            section["ApiSecret"]
-        );
-        _cloudinary = new Cloudinary(account);
-        _cloudinary.Api.Secure = true;
+        _configuration = configuration;
     }
 
-    public async Task<string?> UploadImageAsync(Stream fileStream, string fileName)
+    private Cloudinary GetCloudinaryClient(string? customCloudName, string? customApiKey, string? customApiSecret)
     {
+        string cloudName = !string.IsNullOrWhiteSpace(customCloudName) 
+            ? customCloudName 
+            : _configuration["CloudinarySettings:CloudName"] ?? "";
+            
+        string apiKey = !string.IsNullOrWhiteSpace(customApiKey) 
+            ? customApiKey 
+            : _configuration["CloudinarySettings:ApiKey"] ?? "";
+            
+        string apiSecret = !string.IsNullOrWhiteSpace(customApiSecret) 
+            ? customApiSecret 
+            : _configuration["CloudinarySettings:ApiSecret"] ?? "";
+
+        var account = new Account(cloudName, apiKey, apiSecret);
+        var cloudinary = new Cloudinary(account);
+        cloudinary.Api.Secure = true;
+        return cloudinary;
+    }
+
+    public async Task<string?> UploadImageAsync(Stream fileStream, string fileName, string? cloudName = null, string? apiKey = null, string? apiSecret = null)
+    {
+        var cloudinary = GetCloudinaryClient(cloudName, apiKey, apiSecret);
         var uploadParams = new ImageUploadParams()
         {
             File = new FileDescription(fileName, fileStream),
@@ -36,19 +51,38 @@ public class CloudinaryService : ICloudinaryService
             UniqueFilename = true
         };
 
-        var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+        var uploadResult = await cloudinary.UploadAsync(uploadParams);
         return uploadResult?.SecureUrl?.ToString();
     }
 
-    public async Task<string?> UploadVideoAsync(Stream fileStream, string fileName)
+    public async Task<string?> UploadVideoAsync(Stream fileStream, string fileName, string? cloudName = null, string? apiKey = null, string? apiSecret = null)
     {
+        var cloudinary = GetCloudinaryClient(cloudName, apiKey, apiSecret);
         var uploadParams = new VideoUploadParams()
         {
             File = new FileDescription(fileName, fileStream),
             Folder = "erp-store/videos"
         };
 
-        var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+        var uploadResult = await cloudinary.UploadAsync(uploadParams);
         return uploadResult?.SecureUrl?.ToString();
+    }
+
+    public async Task<bool> TestConnectionAsync(string cloudName, string apiKey, string apiSecret)
+    {
+        try
+        {
+            var account = new Account(cloudName, apiKey, apiSecret);
+            var cloudinary = new Cloudinary(account);
+            cloudinary.Api.Secure = true;
+            
+            // Usamos PingAsync para validar las credenciales
+            var result = await cloudinary.PingAsync();
+            return result.StatusCode == System.Net.HttpStatusCode.OK;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

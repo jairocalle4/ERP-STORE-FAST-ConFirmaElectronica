@@ -92,8 +92,13 @@ using (var scope = app.Services.CreateScope())
     // Step 1: Ensure column exists via raw SQL (safe, idempotent)
     try
     {
-        db.Database.ExecuteSqlRaw(@"ALTER TABLE ""CashRegisterSessions"" ADD COLUMN IF NOT EXISTS ""WithdrawalAmount"" DECIMAL(18,2) NOT NULL DEFAULT 0;");
-        Console.WriteLine("✅ WithdrawalAmount column verified/created successfully.");
+        db.Database.ExecuteSqlRaw(@"
+            ALTER TABLE ""CashRegisterSessions"" ADD COLUMN IF NOT EXISTS ""WithdrawalAmount"" DECIMAL(18,2) NOT NULL DEFAULT 0;
+            ALTER TABLE ""CompanySettings"" ADD COLUMN IF NOT EXISTS ""CloudinaryCloudName"" TEXT NULL;
+            ALTER TABLE ""CompanySettings"" ADD COLUMN IF NOT EXISTS ""CloudinaryApiKey"" TEXT NULL;
+            ALTER TABLE ""CompanySettings"" ADD COLUMN IF NOT EXISTS ""CloudinaryApiSecret"" TEXT NULL;
+        ");
+        Console.WriteLine("✅ Database columns verified/created successfully.");
     }
     catch (Exception sqlEx)
     {

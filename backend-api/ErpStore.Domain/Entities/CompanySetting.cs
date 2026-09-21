@@ -67,4 +67,9 @@ public class CompanySetting : BaseEntity
     
     // Logo for PDF and system UI
     public string? LogoUrl { get; set; }
+
+    // Cloudinary Storage Configuration
+    public string? CloudinaryCloudName { get; set; }
+    public string? CloudinaryApiKey { get; set; }
+    public string? CloudinaryApiSecret { get; set; }
 }

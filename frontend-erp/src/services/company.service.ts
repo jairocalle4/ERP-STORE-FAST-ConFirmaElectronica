@@ -18,6 +18,9 @@ export interface CompanySetting {
     coverImageUrl?: string;
     logoUrl?: string;
     sriEnvironment?: string;
+    cloudinaryCloudName?: string;
+    cloudinaryApiKey?: string;
+    cloudinaryApiSecret?: string;
 }
 
 export interface CompanySettingDto {
@@ -37,6 +40,9 @@ export interface CompanySettingDto {
     coverImageUrl?: string;
     logoUrl?: string;
     sriEnvironment?: string;
+    cloudinaryCloudName?: string;
+    cloudinaryApiKey?: string;
+    cloudinaryApiSecret?: string;
 }
 
 export const companyService = {
