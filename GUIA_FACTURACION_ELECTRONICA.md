@@ -441,3 +441,61 @@ TIEMPO ESTIMADO PARA ESTAR OPERATIVO: 1-3 días hábiles
   (dependiendo de cuánto tarde el BCE en emitir el .p12)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+---
+
+## PARTE 9 — Nuevas Normativas SRI (Resolución NAC-DGERCGC26-00000027) y Correcciones Técnicas del RIDE
+
+> **Actualización técnica y tributaria:** Septiembre 2026
+
+### 1. Resolución SRI Nro. NAC-DGERCGC26-00000027 (RUC de Proveedor de Software)
+
+A finales de julio de 2026, el Servicio de Rentas Internas emitió la **Resolución NAC-DGERCGC26-00000027** (incorporada en la Ficha Técnica SRI v2.34), con entrada en vigor tras 60 días calendario (finales de septiembre de 2026):
+
+#### A. Alcance de la Obligación:
+* **Para emisores que usan software de terceros:** Es **obligatorio** incluir en el XML y en el RIDE el número de RUC de la empresa o profesional que suministra o comercializa el software de facturación electrónica.
+* **Ubicación en el XML:**
+  ```xml
+  <infoAdicional>
+      <campoAdicional nombre="RUC Proveedor">0929433514001</campoAdicional>
+  </infoAdicional>
+  ```
+* **Para Software de Desarrollo Propio (In-House):**
+  Si el contribuyente es el desarrollador del sistema para su propio negocio (uso interno exclusivo), **no está obligado** a incluir un RUC de proveedor externo ni a registrarse como proveedor de software comercial ante el SRI bajo las actividades CIIU J62021002 / J62021003.
+* **Para Comercialización a Clientes:**
+  Si tú (ej. *JCTech Soluciones*) comercializas o instalas este ERP a otros negocios clientes, en las facturas emitidas por esos clientes **SÍ es legalmente obligatorio** registrar tu RUC (`0929433514001`) como `RUC Proveedor`.
+
+#### B. Implementación en el ERP:
+* En **Configuración (`/app/settings`)** se incluyó el campo:
+  `RUC Proveedor de Software (Opcional)`
+* **Comportamiento dinámico:**
+  - Si el campo está vacío (uso propio/in-house), el sistema no envía este atributo.
+  - Si tiene un RUC registrado, el backend lo inyecta automáticamente en `infoAdicional` del XML autorizado y en el RIDE.
+
+---
+
+### 2. Estructura Legal y Buenas Prácticas para "Información Adicional"
+
+* **¿Es legal incluir textos como "Gracias por su compra"?**
+  **Sí.** El estándar XSD del SRI (`comprobante.xsd`) define `<infoAdicional>` como un bloque flexible para hasta 15 etiquetas libres (`<campoAdicional nombre="..." valor="...">`) de hasta 300 caracteres. El webservice del SRI lo aprueba sin generar rechazo.
+* **Campos formales configurados en el ERP:**
+  1. `Dirección:` Se mapea si el cliente tiene dirección registrada y no es genérica.
+  2. `Teléfono:` Se mapea si el cliente tiene teléfono registrado.
+  3. `Email:` Se mapea el correo del cliente para entrega del comprobante electrónico.
+  4. `RUC Proveedor:` Se mapea cuando aplica la Resolución 27 (software provisto a terceros).
+  5. `Observaciones:` Texto configurable dinámicamente desde el campo **Mensaje Legal / Observaciones** de Configuración (sustituye el texto estático quemado en código).
+
+---
+
+### 3. Correcciones Visuales y Fiscales en el RIDE (PDF QuestPDF)
+
+1. **Corrección de Subtotales Duplicados:**
+   - **Problema previo:** En ventas sin IVA (como RIMPE Negocio Popular o tarifa 0%), la variable de cálculo de IVA se evaluaba a 0, haciendo que el generador dibujara dos filas consecutivas llamadas `Subtotal 0%` (`Subtotal 0% $0.00` y `Subtotal 0% $15.00`).
+   - **Solución implementada:** La tabla de totales ahora distingue claramente entre `Subtotal 15%` (o la tasa IVA configurada en la empresa) y `Subtotal 0%`, garantizando que en ventas con tarifa 0% se muestre:
+     - `Subtotal 15%   $0.00`
+     - `Subtotal 0%   $15.00`
+     - `IVA 15%        $0.00`
+     - `VALOR TOTAL   $15.00`
+2. **Leyenda del Régimen RIMPE:**
+   - En la cabecera se mantiene la leyenda: `CONTRIBUYENTE RÉGIMEN RIMPE`.
+

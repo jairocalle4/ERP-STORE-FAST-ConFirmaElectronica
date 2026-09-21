@@ -72,4 +72,7 @@ public class CompanySetting : BaseEntity
     public string? CloudinaryCloudName { get; set; }
     public string? CloudinaryApiKey { get; set; }
     public string? CloudinaryApiSecret { get; set; }
+
+    /// <summary>RUC del proveedor de software según Res. NAC-DGERCGC26-00000027 (opcional si es software propio).</summary>
+    public string? SoftwareProviderRuc { get; set; }
 }

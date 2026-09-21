@@ -47,7 +47,7 @@ public static class RidePdfGenerator
                     c.Item().Element(el => ComposeHeader(el, sale, company, logoBytes));
                     c.Item().PaddingTop(15).Element(el => ComposeClient(el, sale));
                     c.Item().PaddingTop(15).Element(el => ComposeProductsTable(el, sale));
-                    c.Item().PaddingTop(15).Element(el => ComposeTotals(el, sale));
+                    c.Item().PaddingTop(15).Element(el => ComposeTotals(el, sale, company));
                 });
 
                 page.Footer().Element(el => ComposeFooter(el, company));
@@ -66,7 +66,7 @@ public static class RidePdfGenerator
             {
                 if (logoBytes != null)
                 {
-                    column.Item().Height(80).AlignLeft().Image(logoBytes).FitArea();
+                    column.Item().MaxHeight(60).Image(logoBytes);
                     column.Item().PaddingTop(10);
                 }
 
@@ -226,23 +226,70 @@ public static class RidePdfGenerator
         });
     }
 
-    private static void ComposeTotals(IContainer container, Sale sale)
+    private static void ComposeTotals(IContainer container, Sale sale, CompanySetting company)
     {
         container.Row(row =>
         {
             row.RelativeItem().PaddingRight(20).Column(column =>
             {
-                if (!string.IsNullOrEmpty(sale.Client?.Email))
+                column.Item().Text("Información Adicional").FontSize(11).Bold().FontColor(PrimaryColor);
+
+                bool hasAnyInfo = false;
+
+                if (!string.IsNullOrWhiteSpace(sale.Client?.Address) && sale.Client.Address != "Ecuador")
                 {
-                    column.Item().Border(1).BorderColor(BorderColor).Padding(8).Text(t =>
+                    column.Item().PaddingTop(3).Text(t =>
                     {
-                        t.Span("Email Cliente: ").Bold();
+                        t.DefaultTextStyle(x => x.FontSize(9));
+                        t.Span("Dirección: ").Bold();
+                        t.Span(sale.Client.Address);
+                    });
+                    hasAnyInfo = true;
+                }
+
+                if (!string.IsNullOrWhiteSpace(sale.Client?.Phone))
+                {
+                    column.Item().PaddingTop(2).Text(t =>
+                    {
+                        t.DefaultTextStyle(x => x.FontSize(9));
+                        t.Span("Teléfono: ").Bold();
+                        t.Span(sale.Client.Phone);
+                    });
+                    hasAnyInfo = true;
+                }
+
+                if (!string.IsNullOrWhiteSpace(sale.Client?.Email) && sale.Client.Email != "notiene@correo.com")
+                {
+                    column.Item().PaddingTop(2).Text(t =>
+                    {
+                        t.DefaultTextStyle(x => x.FontSize(9));
+                        t.Span("Email: ").Bold();
                         t.Span(sale.Client.Email);
                     });
+                    hasAnyInfo = true;
                 }
-                
-                column.Item().PaddingTop(10).Text("Información Adicional").FontSize(11).Bold().FontColor(PrimaryColor);
-                column.Item().Text("Gracias por su compra.").FontSize(9).Italic();
+
+                if (!string.IsNullOrWhiteSpace(company.SoftwareProviderRuc))
+                {
+                    column.Item().PaddingTop(2).Text(t =>
+                    {
+                        t.DefaultTextStyle(x => x.FontSize(9));
+                        t.Span("RUC Proveedor: ").Bold();
+                        t.Span(company.SoftwareProviderRuc);
+                    });
+                    hasAnyInfo = true;
+                }
+
+                if (!string.IsNullOrWhiteSpace(company.LegalMessage))
+                {
+                    column.Item().PaddingTop(4).Text(company.LegalMessage).FontSize(9).Italic();
+                    hasAnyInfo = true;
+                }
+
+                if (!hasAnyInfo)
+                {
+                    column.Item().PaddingTop(3).Text("Comprobante emitido conforme a la normativa del SRI.").FontSize(8).FontColor(Colors.Grey.Medium);
+                }
             });
 
             row.ConstantItem(250).Table(table =>
@@ -254,10 +301,11 @@ public static class RidePdfGenerator
                 });
 
                 decimal subtotal = sale.SaleDetails?.Sum(d => d.Subtotal) ?? 0;
-                decimal iva = sale.Total - subtotal;
-                decimal subtotalIva = iva > 0 ? subtotal : 0;
-                decimal subtotal0 = iva == 0 ? subtotal : 0;
-                decimal ivaRate = iva > 0 ? 15 : 0; // Para visualizacion
+                decimal iva = Math.Max(0, sale.Total - subtotal);
+                decimal standardIvaRate = company.IvaRate > 0 ? company.IvaRate : 15m;
+
+                decimal subtotalIva = iva > 0 ? subtotal : 0m;
+                decimal subtotal0 = iva == 0 ? subtotal : 0m;
 
                 void DrawTotalRow(string label, string value, bool isTotal = false)
                 {
@@ -276,14 +324,14 @@ public static class RidePdfGenerator
                     });
                 }
 
-                DrawTotalRow($"Subtotal {ivaRate}%", $"${subtotalIva:F2}");
+                DrawTotalRow($"Subtotal {standardIvaRate:0}%", $"${subtotalIva:F2}");
                 DrawTotalRow("Subtotal 0%", $"${subtotal0:F2}");
                 DrawTotalRow("Subtotal No Objeto de IVA", "$0.00");
                 DrawTotalRow("Subtotal Exento de IVA", "$0.00");
                 DrawTotalRow("Subtotal sin Impuestos", $"${subtotal:F2}");
                 DrawTotalRow("Total Descuento", "$0.00");
                 DrawTotalRow("ICE", "$0.00");
-                DrawTotalRow($"IVA {ivaRate}%", $"${iva:F2}");
+                DrawTotalRow($"IVA {standardIvaRate:0}%", $"${iva:F2}");
                 DrawTotalRow("VALOR TOTAL", $"${sale.Total:F2}", true);
             });
         });

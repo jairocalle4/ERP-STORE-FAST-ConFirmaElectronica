@@ -31,4 +31,5 @@ public class CompanySettingDto
     public string? CloudinaryCloudName { get; set; }
     public string? CloudinaryApiKey { get; set; }
     public string? CloudinaryApiSecret { get; set; }
+    public string? SoftwareProviderRuc { get; set; }
 }

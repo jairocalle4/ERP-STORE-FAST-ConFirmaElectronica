@@ -269,6 +269,17 @@ public class ElectronicBillingService : IElectronicBillingService
                 ? sale.NoteNumber.Split('-')[2] 
                 : "000000001";
 
+            // Preparar infoAdicional (Res. NAC-26-00000027 y mensaje legal)
+            var infoAdicionalList = new List<object>();
+            if (!string.IsNullOrWhiteSpace(company.SoftwareProviderRuc))
+            {
+                infoAdicionalList.Add(new { nombre = "RUC Proveedor", valor = company.SoftwareProviderRuc.Trim() });
+            }
+            if (!string.IsNullOrWhiteSpace(company.LegalMessage))
+            {
+                infoAdicionalList.Add(new { nombre = "Observaciones", valor = company.LegalMessage.Trim() });
+            }
+
             // Construir JSON payload
             var payload = new
             {
@@ -329,7 +340,8 @@ public class ElectronicBillingService : IElectronicBillingService
                         plazo = 0,
                         unidadTiempo = "dias"
                     }
-                }
+                },
+                infoAdicional = infoAdicionalList.Count > 0 ? infoAdicionalList.ToArray() : null
             };
 
             using var client = _httpClientFactory.CreateClient();

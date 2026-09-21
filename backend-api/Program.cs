@@ -97,6 +97,7 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE ""CompanySettings"" ADD COLUMN IF NOT EXISTS ""CloudinaryCloudName"" TEXT NULL;
             ALTER TABLE ""CompanySettings"" ADD COLUMN IF NOT EXISTS ""CloudinaryApiKey"" TEXT NULL;
             ALTER TABLE ""CompanySettings"" ADD COLUMN IF NOT EXISTS ""CloudinaryApiSecret"" TEXT NULL;
+            ALTER TABLE ""CompanySettings"" ADD COLUMN IF NOT EXISTS ""SoftwareProviderRuc"" TEXT NULL;
 
             UPDATE ""CompanySettings""
             SET ""CloudinaryCloudName"" = COALESCE(NULLIF(""CloudinaryCloudName"", ''), 'ddw9fdcnt'),

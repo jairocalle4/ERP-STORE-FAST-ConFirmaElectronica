@@ -122,6 +122,9 @@ public class CompanySettingsController : ControllerBase
         settings.CloudinaryApiKey = dto.CloudinaryApiKey;
         settings.CloudinaryApiSecret = dto.CloudinaryApiSecret;
 
+        // Proveedor de Software SRI
+        settings.SoftwareProviderRuc = dto.SoftwareProviderRuc;
+
         settings.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();

@@ -21,6 +21,7 @@ export interface CompanySetting {
     cloudinaryCloudName?: string;
     cloudinaryApiKey?: string;
     cloudinaryApiSecret?: string;
+    softwareProviderRuc?: string;
 }
 
 export interface CompanySettingDto {
@@ -43,6 +44,7 @@ export interface CompanySettingDto {
     cloudinaryCloudName?: string;
     cloudinaryApiKey?: string;
     cloudinaryApiSecret?: string;
+    softwareProviderRuc?: string;
 }
 
 export const companyService = {

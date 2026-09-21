@@ -739,8 +739,8 @@ export default function SettingsPage() {
                             </div>
                         </div>
 
-                        {/* ── Secuencial y Mensaje Legal ── */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        {/* ── Secuencial, Proveedor de Software y Mensaje Legal ── */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
                                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Secuencial Actual</label>
                                 <div className="relative">
@@ -758,17 +758,32 @@ export default function SettingsPage() {
                                     Después se incrementará automáticamente.
                                 </p>
                             </div>
-                            <div className="md:col-span-2">
-                                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Mensaje Legal (Pie de Ticket)</label>
-                                <textarea
-                                    rows={2}
-                                    value={settings?.legalMessage || ''}
-                                    onChange={e => setSettings(s => s ? { ...s, legalMessage: e.target.value } : null)}
-                                    className="w-full px-4 py-3 bg-white/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all resize-none text-sm"
-                                    placeholder="Ej: Contribuyente Negocio Popular – Régimen RIMPE."
+                            <div>
+                                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">RUC Proveedor de Software (Opcional)</label>
+                                <input
+                                    type="text"
+                                    placeholder="Ej: 0929433514001"
+                                    maxLength={13}
+                                    value={settings?.softwareProviderRuc || ''}
+                                    onChange={e => setSettings(s => s ? { ...s, softwareProviderRuc: e.target.value } : null)}
+                                    className="w-full px-4 py-3 bg-white/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all font-mono text-sm"
                                 />
-                                <p className="text-[10px] text-slate-400 mt-1 italic">Aparece al pie del ticket térmico impreso.</p>
+                                <p className="text-[10px] text-slate-400 mt-1 italic">
+                                    ⚡ Res. NAC-26-00000027: Vacío si es software propio. Si se vende el ERP a un tercero, ingresa el RUC del proveedor.
+                                </p>
                             </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Mensaje Legal / Observaciones (Pie de Ticket y RIDE)</label>
+                            <textarea
+                                rows={2}
+                                value={settings?.legalMessage || ''}
+                                onChange={e => setSettings(s => s ? { ...s, legalMessage: e.target.value } : null)}
+                                className="w-full px-4 py-3 bg-white/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all resize-none text-sm"
+                                placeholder="Ej: Contribuyente Régimen RIMPE."
+                            />
+                            <p className="text-[10px] text-slate-400 mt-1 italic">Aparece en la Información Adicional del RIDE y al pie del ticket térmico.</p>
                         </div>
 
                         {/* Firma Electrónica .p12 */}
